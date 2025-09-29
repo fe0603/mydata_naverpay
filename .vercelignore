@@ -25,6 +25,7 @@ Thumbs.db
 # Git 관련
 .git/
 .gitignore
+.git/hooks/
 
 # Node.js
 node_modules/
