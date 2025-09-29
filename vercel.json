@@ -5,7 +5,8 @@
       "src": "server.js",
       "use": "@vercel/node",
       "config": {
-        "maxDuration": 30
+        "maxDuration": 30,
+        "runtime": "nodejs18.x"
       }
     },
     {
@@ -41,5 +42,10 @@
   ],
   "env": {
     "NODE_ENV": "production"
+  },
+  "functions": {
+    "server.js": {
+      "runtime": "nodejs18.x"
+    }
   }
 }

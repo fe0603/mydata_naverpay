@@ -42,6 +42,7 @@ Vercel 대시보드의 "Environment Variables" 섹션에서 다음 변수들을 
 ```
 GEMINI_API_KEY=AIzaSyAJa7ixo3h3CytmCvvAMSWX2cH2g1XTXpg
 NODE_ENV=production
+VERCEL=1
 ```
 
 #### 선택적 환경변수

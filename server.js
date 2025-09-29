@@ -218,7 +218,7 @@ app.post('/api/investment-advice', async (req, res) => {
         
         // Gemini API 호출 (최적화된 설정)
         const geminiResponse = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
             requestData,
             {
                 headers: {
@@ -238,7 +238,7 @@ app.post('/api/investment-advice', async (req, res) => {
             timestamp: new Date().toISOString(),
             riskWarning: '투자에는 원금 손실의 위험이 있습니다. 이 제안은 참고용이며, 실제 투자 결정은 신중히 하시기 바랍니다.',
             apiUsage: {
-                model: 'gemini-2.0-flash-exp',
+                model: 'gemini-1.5-flash',
                 promptLength: investmentPrompt ? investmentPrompt.length : 0,
                 responseLength: advice.length
             }
@@ -914,10 +914,11 @@ if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
         }
     });
 } else {
-    // Vercel 환경에서는 환경변수 체크만 수행
-    console.log('🚀 Vercel 환경에서 실행 중입니다.');
-    console.log(`💡 환경: ${process.env.NODE_ENV || 'production'}`);
+    // Vercel 환경에서 로그 출력
+    console.log(`🚀 Vercel 환경에서 마이데이터 투자 제안 시스템이 실행 중입니다.`);
+    console.log(`💡 환경: ${process.env.NODE_ENV}`);
     
+    // 환경변수 체크
     if (!process.env.GEMINI_API_KEY) {
         console.warn('⚠️  GEMINI_API_KEY가 설정되지 않았습니다.');
     }
