@@ -227,8 +227,7 @@ app.post('/api/investment-advice', async (req, res) => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                timeout: 15000,  // 타임아웃을 15초로 단축
-                maxRedirects: 3
+                timeout: 30000
             }
         );
         
