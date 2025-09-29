@@ -30,10 +30,10 @@
 - **Root Directory**: `./` (기본값)
 
 #### Build and Output Settings
-- **Build Command**: `npm run build` (또는 비워둠)
+- **Build Command**: 비워둠 (Vercel이 자동 감지)
 - **Output Directory**: `./` (기본값)
 - **Install Command**: `npm install`
-- **Node.js Version**: `18.x` (자동 감지됨)
+- **Node.js Version**: `18.19.0` (package.json에서 자동 감지)
 
 ### 3단계: 환경변수 설정
 
