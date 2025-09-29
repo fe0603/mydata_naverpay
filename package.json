@@ -1,6 +1,6 @@
 {
   "name": "mydata-investment-advisor",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "마이데이터 기반 AI 투자 제안 시스템 - 시장 데이터 연동 및 리밸런싱",
   "main": "server.js",
   "scripts": {
