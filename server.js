@@ -39,7 +39,7 @@ if (process.env.NODE_ENV === 'production') {
 // CORS 설정 (마이데이터 정책 고려)
 app.use(cors({
     origin: process.env.NODE_ENV === 'production' 
-        ? ['https://your-domain.com'] 
+        ? ['https://mydatanaverpay-h461dp11t-fe-gptersorgs-projects.vercel.app', 'https://mydata-naverpay.vercel.app'] 
         : ['http://localhost:3000', 'http://127.0.0.1:3000'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
