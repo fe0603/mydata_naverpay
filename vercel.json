@@ -10,12 +10,6 @@
       }
     }
   ],
-  "functions": {
-    "server.js": {
-      "runtime": "nodejs22.x",
-      "maxDuration": 30
-    }
-  },
   "routes": [
     {
       "src": "/api/(.*)",
