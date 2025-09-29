@@ -221,7 +221,7 @@ app.post('/api/investment-advice', async (req, res) => {
         
         // Gemini API 호출 (최적화된 설정)
         const geminiResponse = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
             requestData,
             {
                 headers: {
@@ -241,7 +241,7 @@ app.post('/api/investment-advice', async (req, res) => {
             timestamp: new Date().toISOString(),
             riskWarning: '투자에는 원금 손실의 위험이 있습니다. 이 제안은 참고용이며, 실제 투자 결정은 신중히 하시기 바랍니다.',
             apiUsage: {
-                model: 'gemini-1.5-pro',
+                model: 'gemini-pro',
                 promptLength: investmentPrompt ? investmentPrompt.length : 0,
                 responseLength: advice.length
             }
