@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 포트폴리오 테스트</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            max-width: 800px; 
+            margin: 50px auto; 
+            padding: 20px; 
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .btn { 
+            background: #03C75A; 
+            color: white; 
+            border: none; 
+            padding: 15px 30px; 
+            margin: 15px 10px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px;
+        }
+        .btn:hover { background: #02a049; }
+        .input-group {
+            margin: 20px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .result { 
+            background: #f8f9fa; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-radius: 8px; 
+            border: 1px solid #dee2e6; 
+            min-height: 100px;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+        }
+        .notification.success { background: #03C75A; }
+        .notification.error { background: #dc3545; }
+        .notification.warning { background: #ffc107; color: #000; }
+        .notification.info { background: #17a2b8; }
+        h1 { color: #03C75A; text-align: center; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 6px; }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 간단한 포트폴리오 테스트</h1>
+        
+        <div class="input-group">
+            <label for="portfolio-input">포트폴리오 입력:</label>
+            <input type="text" id="portfolio-input" 
+                   value="삼성전자 10주, 카카오 5" 
+                   placeholder="예: 삼성전자 10주, 카카오 5">
+        </div>
+        
+        <div class="input-group">
+            <label for="amount-input">총 투자금액:</label>
+            <input type="number" id="amount-input" 
+                   value="10000000" 
+                   placeholder="10000000">
+        </div>
+        
+        <div style="text-align: center;">
+            <button class="btn" onclick="testPortfolioAnalysis()">포트폴리오 분석 테스트</button>
+            <button class="btn" onclick="testAPIConnection()">API 연결 테스트</button>
+            <button class="btn" onclick="clearResults()">결과 지우기</button>
+        </div>
+        
+        <div id="status" class="status" style="display: none;"></div>
+        <div id="result" class="result">
+            <h4>🔍 테스트 결과</h4>
+            <p>위 버튼을 클릭해서 테스트를 시작하세요.</p>
+        </div>
+    </div>
+
+    <script>
+        // 📊 포트폴리오 분석 테스트
+        async function testPortfolioAnalysis() {
+            console.log('🔍 포트폴리오 분석 테스트 시작');
+            
+            try {
+                showStatus('포트폴리오 분석 중...', 'info');
+                
+                const portfolioText = document.getElementById('portfolio-input').value;
+                const amount = parseInt(document.getElementById('amount-input').value);
+                
+                console.log('📊 입력값:', { portfolioText, amount });
+                
+                if (!portfolioText || !amount) {
+                    throw new Error('포트폴리오와 투자금액을 모두 입력해주세요.');
+                }
+                
+                // 1단계: 포트폴리오 파싱
+                const portfolio = parsePortfolioSimple(portfolioText);
+                console.log('📊 파싱된 포트폴리오:', portfolio);
+                
+                // 2단계: 실제 API 호출 테스트
+                const apiResults = await Promise.all(
+                    Object.keys(portfolio).map(async (stockName) => {
+                        try {
+                            const response = await fetch(`/api/yahoo-finance/${encodeURIComponent(stockName)}`);
+                            const data = await response.json();
+                            return { stockName, data, success: data.success };
+                        } catch (error) {
+                            return { stockName, error: error.message, success: false };
+                        }
+                    })
+                );
+                
+                // 3단계: 결과 계산
+                let totalValue = 0;
+                let results = [];
+                
+                apiResults.forEach(({ stockName, data, success }) => {
+                    const shares = portfolio[stockName];
+                    const price = success ? data.price : 50000;
+                    const value = shares * price;
+                    totalValue += value;
+                    
+                    results.push({
+                        stockName,
+                        shares,
+                        price,
+                        value,
+                        success,
+                        demoMode: data?.demoMode || false
+                    });
+                });
+                
+                // 4단계: 결과 표시
+                displayResults(results, totalValue, amount);
+                showStatus('✅ 포트폴리오 분석 완료!', 'success');
+                showNotification('포트폴리오 분석이 완료되었습니다!', 'success');
+                
+            } catch (error) {
+                console.error('❌ 포트폴리오 분석 오류:', error);
+                showStatus('❌ 오류: ' + error.message, 'error');
+                showNotification('오류: ' + error.message, 'error');
+            }
+        }
+        
+        // 📊 API 연결 테스트
+        async function testAPIConnection() {
+            console.log('🔗 API 연결 테스트 시작');
+            
+            try {
+                showStatus('API 연결 테스트 중...', 'info');
+                
+                // 1. 서버 상태 확인
+                const healthResponse = await fetch('/api/health');
+                const healthData = await healthResponse.json();
+                
+                // 2. Yahoo Finance API 테스트
+                const yahooResponse = await fetch('/api/yahoo-finance/삼성전자');
+                const yahooData = await yahooResponse.json();
+                
+                const resultHtml = `
+                    <h4>🔗 API 연결 테스트 결과</h4>
+                    <div style="margin: 15px 0;">
+                        <strong>1️⃣ 서버 상태:</strong><br>
+                        • 상태: ${healthData.status}<br>
+                        • 환경: ${healthData.environment}<br>
+                        • 포트: ${healthData.port}<br>
+                        • Gemini API: ${healthData.apis.gemini ? '✅ 설정됨' : '❌ 미설정'}<br>
+                        • KIS API: ${healthData.apis.kis ? '✅ 설정됨' : '❌ 미설정'}
+                    </div>
+                    <div style="margin: 15px 0;">
+                        <strong>2️⃣ Yahoo Finance API:</strong><br>
+                        • 성공: ${yahooData.success ? '✅' : '❌'}<br>
+                        • 삼성전자 가격: ${formatNumber(yahooData.price)}원<br>
+                        • 변동: ${yahooData.change}원 (${yahooData.changePercent}%)<br>
+                        • 데모 모드: ${yahooData.demoMode ? '✅' : '❌'}<br>
+                        ${yahooData.message ? `• 메시지: ${yahooData.message}` : ''}
+                    </div>
+                `;
+                
+                document.getElementById('result').innerHTML = resultHtml;
+                showStatus('✅ API 연결 테스트 완료!', 'success');
+                showNotification('API 연결이 정상입니다!', 'success');
+                
+            } catch (error) {
+                console.error('❌ API 연결 오류:', error);
+                showStatus('❌ API 연결 실패: ' + error.message, 'error');
+                showNotification('API 연결 실패: ' + error.message, 'error');
+            }
+        }
+        
+        // 📊 간단한 포트폴리오 파싱
+        function parsePortfolioSimple(text) {
+            const portfolio = {};
+            const lines = text.split(',');
+            
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed) {
+                    // "삼성전자 10주" 또는 "삼성전자 10" 형태
+                    const match = trimmed.match(/(.+?)\s*(\d+)(?:주)?/);
+                    if (match) {
+                        const stockName = match[1].trim();
+                        const shares = parseInt(match[2]);
+                        portfolio[stockName] = shares;
+                    }
+                }
+            });
+            
+            return portfolio;
+        }
+        
+        // 📊 결과 표시
+        function displayResults(results, totalValue, investmentAmount) {
+            const profit = totalValue - investmentAmount;
+            const profitRate = ((profit / investmentAmount) * 100).toFixed(2);
+            
+            let html = '<h4>📊 포트폴리오 분석 결과</h4>';
+            
+            results.forEach(({ stockName, shares, price, value, success, demoMode }) => {
+                const statusIcon = success ? (demoMode ? '🟡' : '🟢') : '🔴';
+                html += `
+                    <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 6px;">
+                        <strong>${statusIcon} ${stockName}</strong><br>
+                        • 보유: ${formatNumber(shares)}주<br>
+                        • 현재가: ${formatNumber(price)}원<br>
+                        • 평가금액: ${formatNumber(value)}원<br>
+                        • 상태: ${success ? (demoMode ? '데모 데이터' : '실시간 데이터') : '오류'}
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div style="background: #e7f3ff; padding: 20px; margin: 20px 0; border-radius: 8px; border: 1px solid #b6d7ff;">
+                    <h4>💰 투자 요약</h4>
+                    • 총 투자금액: ${formatNumber(investmentAmount)}원<br>
+                    • 현재 평가금액: ${formatNumber(totalValue)}원<br>
+                    • 손익: ${formatNumber(profit)}원<br>
+                    • 수익률: ${profitRate}%
+                </div>
+            `;
+            
+            document.getElementById('result').innerHTML = html;
+        }
+        
+        // 💡 유틸리티 함수들
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        function clearResults() {
+            document.getElementById('result').innerHTML = `
+                <h4>🔍 테스트 결과</h4>
+                <p>위 버튼을 클릭해서 테스트를 시작하세요.</p>
+            `;
+            document.getElementById('status').style.display = 'none';
+            console.clear();
+        }
+        
+        // 페이지 로드 완료
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('✅ 간단한 포트폴리오 테스트 페이지 로딩 완료');
+            showNotification('페이지 로딩 완료 - 테스트를 시작하세요!', 'info');
+        });
+        
+        // 전역 오류 핸들러
+        window.addEventListener('error', (e) => {
+            console.error('❌ JavaScript 오류:', e.message, e.filename, e.lineno);
+            showStatus(`❌ JavaScript 오류: ${e.message}`, 'error');
+        });
+    </script>
+</body>
+</html>

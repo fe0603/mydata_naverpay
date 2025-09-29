@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>빠른 테스트</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .btn { background: #03C75A; color: white; border: none; padding: 15px 30px; margin: 10px; border-radius: 5px; cursor: pointer; }
+        .btn:hover { background: #02a049; }
+        .result { background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 5px; border: 1px solid #dee2e6; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 빠른 기능 테스트</h1>
+    
+    <div>
+        <h3>1️⃣ 기본 JavaScript 테스트</h3>
+        <button class="btn" onclick="alert('JavaScript 기본 동작 확인!')">기본 테스트</button>
+        <button class="btn" onclick="testConsole()">콘솔 테스트</button>
+    </div>
+    
+    <div>
+        <h3>2️⃣ 포트폴리오 간단 테스트</h3>
+        <input type="text" id="test-portfolio" placeholder="삼성전자 10주, 카카오 5" value="삼성전자 10주, 카카오 5">
+        <input type="number" id="test-amount" placeholder="10000000" value="10000000">
+        <button class="btn" onclick="testPortfolioQuick()">포트폴리오 파싱 테스트</button>
+    </div>
+    
+    <div>
+        <h3>3️⃣ API 연결 테스트</h3>
+        <button class="btn" onclick="testServerAPI()">서버 API 테스트</button>
+        <button class="btn" onclick="testYahooAPI()">Yahoo API 테스트</button>
+    </div>
+    
+    <div id="result" class="result" style="display: none;">
+        <h4>결과:</h4>
+        <div id="result-content"></div>
+    </div>
+
+    <script>
+        function testConsole() {
+            console.log('✅ 콘솔 테스트 성공');
+            showResult('콘솔 테스트 완료 - F12로 콘솔 확인');
+        }
+        
+        function testPortfolioQuick() {
+            try {
+                const portfolioText = document.getElementById('test-portfolio').value;
+                const amount = document.getElementById('test-amount').value;
+                
+                console.log('📊 입력값:', { portfolioText, amount });
+                
+                // 간단한 파싱 테스트
+                const lines = portfolioText.split(',');
+                let result = `입력값: ${portfolioText}\n투자금액: ${amount}원\n파싱된 항목: ${lines.length}개\n`;
+                
+                lines.forEach((line, index) => {
+                    const trimmed = line.trim();
+                    result += `${index + 1}. ${trimmed}\n`;
+                });
+                
+                showResult(result);
+                console.log('✅ 포트폴리오 파싱 테스트 성공');
+                
+            } catch (error) {
+                showResult('❌ 오류: ' + error.message);
+                console.error('❌ 포트폴리오 테스트 오류:', error);
+            }
+        }
+        
+        async function testServerAPI() {
+            try {
+                showResult('🔄 서버 API 테스트 중...');
+                
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                if (data.status === 'OK') {
+                    showResult(`✅ 서버 연결 성공!\n상태: ${data.status}\n환경: ${data.environment}\n포트: ${data.port}\nGemini API: ${data.apis.gemini ? '설정됨' : '미설정'}`);
+                } else {
+                    showResult('⚠️ 서버 응답이 예상과 다름: ' + JSON.stringify(data));
+                }
+            } catch (error) {
+                showResult('❌ 서버 연결 실패: ' + error.message);
+                console.error('❌ 서버 API 오류:', error);
+            }
+        }
+        
+        async function testYahooAPI() {
+            try {
+                showResult('🔄 Yahoo Finance API 테스트 중...');
+                
+                const response = await fetch('/api/yahoo-finance/삼성전자');
+                const data = await response.json();
+                
+                if (data.price || data.success !== false) {
+                    showResult(`✅ Yahoo API 성공!\n종목: 삼성전자\n가격: ${data.price}원\n변동: ${data.change}원 (${data.changePercent}%)`);
+                } else {
+                    showResult('⚠️ Yahoo API 응답: ' + JSON.stringify(data));
+                }
+            } catch (error) {
+                showResult('❌ Yahoo API 실패: ' + error.message);
+                console.error('❌ Yahoo API 오류:', error);
+            }
+        }
+        
+        function showResult(message) {
+            const resultDiv = document.getElementById('result');
+            const contentDiv = document.getElementById('result-content');
+            
+            contentDiv.innerHTML = message.replace(/\n/g, '<br>');
+            resultDiv.style.display = 'block';
+            
+            console.log('📋 결과:', message);
+        }
+        
+        // 페이지 로드 완료 시
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('✅ 빠른 테스트 페이지 로딩 완료');
+            showResult('페이지 로딩 완료 - 위 버튼들을 클릭해서 테스트하세요!');
+        });
+        
+        // 전역 오류 핸들러
+        window.addEventListener('error', function(e) {
+            console.error('❌ 전역 오류:', e.message, e.filename, e.lineno);
+            showResult(`❌ JavaScript 오류: ${e.message} (파일: ${e.filename}, 라인: ${e.lineno})`);
+        });
+    </script>
+</body>
+</html>
