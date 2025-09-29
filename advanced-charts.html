@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고급 차트 분석 - 마이데이터</title>
+    
+    <!-- PWA 메타 태그 -->
+    <meta name="description" content="고급 투자 분석 차트 및 기술적 지표">
+    <meta name="theme-color" content="#03C75A">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- 스타일시트 -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- 고급 차트 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    
+    <style>
+        .charts-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .controls-panel {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: end;
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .chart-panel {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+        
+        .chart-options {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .chart-options button {
+            padding: 6px 12px;
+            border: 1px solid var(--gray-200);
+            background: var(--white);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .chart-options button.active {
+            background: var(--npay-green);
+            color: var(--white);
+            border-color: var(--npay-green);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        
+        .chart-container.large {
+            height: 500px;
+        }
+        
+        .indicators-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .indicator-card {
+            background: var(--gray-100);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .indicator-label {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+            margin-bottom: 8px;
+        }
+        
+        .indicator-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        
+        .indicator-value.positive {
+            color: var(--npay-green);
+        }
+        
+        .indicator-value.negative {
+            color: var(--error);
+        }
+        
+        .indicator-description {
+            font-size: 0.8rem;
+            color: var(--gray-600);
+            margin-top: 4px;
+        }
+        
+        .analysis-section {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .signal-card {
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .signal-card.buy {
+            border-color: var(--npay-green);
+            background: var(--npay-light-green);
+        }
+        
+        .signal-card.sell {
+            border-color: var(--error);
+            background: #FEE2E2;
+        }
+        
+        .signal-card.hold {
+            border-color: var(--warning);
+            background: #FEF3C7;
+        }
+        
+        .signal-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .signal-strength {
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+        }
+        
+        .signal-reason {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+        }
+        
+        .backtest-results {
+            background: var(--gray-100);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .backtest-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .backtest-stat {
+            text-align: center;
+        }
+        
+        .backtest-stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        
+        .backtest-stat-label {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+            margin-top: 4px;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-container {
+                padding: 10px;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .chart-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="charts-container">
+        <header class="header">
+            <h1>📈 고급 차트 분석</h1>
+            <div class="naverpay-logo">
+                <div class="logo-placeholder">Npay 분석</div>
+            </div>
+        </header>
+
+        <!-- 컨트롤 패널 -->
+        <div class="controls-panel">
+            <div class="controls-grid">
+                <div class="form-group">
+                    <label for="symbol-select">종목 선택</label>
+                    <select id="symbol-select" onchange="changeSymbol()">
+                        <option value="삼성전자">삼성전자</option>
+                        <option value="카카오">카카오</option>
+                        <option value="네이버">네이버</option>
+                        <option value="SK하이닉스">SK하이닉스</option>
+                        <option value="LG화학">LG화학</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="period-select">기간 선택</label>
+                    <select id="period-select" onchange="changePeriod()">
+                        <option value="1M">1개월</option>
+                        <option value="3M" selected>3개월</option>
+                        <option value="6M">6개월</option>
+                        <option value="1Y">1년</option>
+                        <option value="2Y">2년</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="chart-type">차트 유형</label>
+                    <select id="chart-type" onchange="changeChartType()">
+                        <option value="candlestick" selected>캔들스틱</option>
+                        <option value="line">라인 차트</option>
+                        <option value="area">영역 차트</option>
+                        <option value="volume">거래량</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <button class="btn primary" onclick="generateSignals()">매매신호 생성</button>
+                </div>
+                
+                <div class="form-group">
+                    <button class="btn secondary" onclick="runBacktest()">백테스트 실행</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 차트 -->
+        <div class="chart-panel">
+            <div class="chart-header">
+                <h2 class="chart-title" id="main-chart-title">삼성전자 - 캔들스틱 차트</h2>
+                <div class="chart-options">
+                    <button class="active" onclick="toggleIndicator('volume')">거래량</button>
+                    <button onclick="toggleIndicator('ma')">이동평균</button>
+                    <button onclick="toggleIndicator('bollinger')">볼린저밴드</button>
+                    <button onclick="toggleIndicator('support')">지지/저항</button>
+                </div>
+            </div>
+            <div class="chart-container large">
+                <canvas id="main-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- 기술적 지표 차트들 -->
+        <div class="chart-grid">
+            <div class="chart-panel">
+                <div class="chart-header">
+                    <h3 class="chart-title">RSI (상대강도지수)</h3>
+                    <div class="chart-options">
+                        <button class="active" onclick="changeRSIPeriod(14)">14일</button>
+                        <button onclick="changeRSIPeriod(21)">21일</button>
+                        <button onclick="changeRSIPeriod(30)">30일</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="rsi-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-panel">
+                <div class="chart-header">
+                    <h3 class="chart-title">MACD</h3>
+                    <div class="chart-options">
+                        <button class="active" onclick="changeMACDSettings(12, 26, 9)">12-26-9</button>
+                        <button onclick="changeMACDSettings(5, 35, 5)">5-35-5</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="macd-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 기술적 지표 요약 -->
+        <div class="analysis-section">
+            <h2>📊 기술적 지표 요약</h2>
+            <div class="indicators-panel" id="indicators-summary">
+                <!-- 동적으로 생성 -->
+            </div>
+        </div>
+
+        <!-- 매매 신호 분석 -->
+        <div class="analysis-section">
+            <h2>🎯 매매 신호 분석</h2>
+            <div class="analysis-grid" id="trading-signals">
+                <!-- 동적으로 생성 -->
+            </div>
+        </div>
+
+        <!-- 백테스트 결과 -->
+        <div class="analysis-section" id="backtest-section" style="display: none;">
+            <h2>📈 백테스트 결과</h2>
+            <div class="backtest-results">
+                <div class="backtest-stats" id="backtest-stats">
+                    <!-- 동적으로 생성 -->
+                </div>
+            </div>
+            <div class="chart-container" style="margin-top: 20px;">
+                <canvas id="backtest-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 스크립트 -->
+    <script src="database.js"></script>
+    <script>
+        let mainChart, rsiChart, macdChart, backtestChart;
+        let currentSymbol = '삼성전자';
+        let currentPeriod = '3M';
+        let currentChartType = 'candlestick';
+        let chartData = {};
+        let indicators = {
+            volume: true,
+            ma: false,
+            bollinger: false,
+            support: false
+        };
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeCharts();
+            loadChartData();
+        });
+
+        // 차트 초기화
+        function initializeCharts() {
+            Chart.register(...Chart.registerables);
+            
+            // 메인 차트 초기화
+            const mainCtx = document.getElementById('main-chart').getContext('2d');
+            mainChart = new Chart(mainCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        zoom: {
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x',
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                            }
+                        },
+                        annotation: {
+                            annotations: {}
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            position: 'left',
+                        },
+                        volume: {
+                            type: 'linear',
+                            display: false,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+
+            // RSI 차트 초기화
+            const rsiCtx = document.getElementById('rsi-chart').getContext('2d');
+            rsiChart = new Chart(rsiCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'RSI',
+                        data: [],
+                        borderColor: '#9333ea',
+                        backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        annotation: {
+                            annotations: {
+                                overbought: {
+                                    type: 'line',
+                                    yMin: 70,
+                                    yMax: 70,
+                                    borderColor: 'red',
+                                    borderWidth: 1,
+                                    borderDash: [5, 5]
+                                },
+                                oversold: {
+                                    type: 'line',
+                                    yMin: 30,
+                                    yMax: 30,
+                                    borderColor: 'green',
+                                    borderWidth: 1,
+                                    borderDash: [5, 5]
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // MACD 차트 초기화
+            const macdCtx = document.getElementById('macd-chart').getContext('2d');
+            macdChart = new Chart(macdCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'MACD',
+                            data: [],
+                            borderColor: '#2563eb',
+                            backgroundColor: 'transparent',
+                            fill: false
+                        },
+                        {
+                            label: 'Signal',
+                            data: [],
+                            borderColor: '#dc2626',
+                            backgroundColor: 'transparent',
+                            fill: false
+                        },
+                        {
+                            label: 'Histogram',
+                            data: [],
+                            backgroundColor: '#16a34a',
+                            type: 'bar'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // 차트 데이터 로드
+        async function loadChartData() {
+            try {
+                // 실제 구현에서는 API에서 데이터 가져오기
+                chartData = await generateSampleData(currentSymbol, currentPeriod);
+                
+                updateMainChart();
+                updateTechnicalIndicators();
+                updateIndicatorsSummary();
+                
+            } catch (error) {
+                console.error('차트 데이터 로드 실패:', error);
+                showError('차트 데이터를 불러올 수 없습니다.');
+            }
+        }
+
+        // 샘플 데이터 생성
+        async function generateSampleData(symbol, period) {
+            const days = periodToDays(period);
+            const data = {
+                labels: [],
+                prices: [],
+                volumes: [],
+                highs: [],
+                lows: [],
+                opens: [],
+                closes: []
+            };
+
+            let basePrice = getBasePrice(symbol);
+            let currentPrice = basePrice;
+
+            for (let i = days; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                
+                // 가격 변동 시뮬레이션
+                const volatility = 0.02; // 2% 변동성
+                const change = (Math.random() - 0.5) * volatility;
+                currentPrice = Math.max(currentPrice * (1 + change), basePrice * 0.5);
+                
+                const open = currentPrice;
+                const high = open * (1 + Math.random() * 0.03);
+                const low = open * (1 - Math.random() * 0.03);
+                const close = low + Math.random() * (high - low);
+                const volume = Math.floor(Math.random() * 10000000) + 1000000;
+
+                data.labels.push(date);
+                data.opens.push(open);
+                data.highs.push(high);
+                data.lows.push(low);
+                data.closes.push(close);
+                data.prices.push(close);
+                data.volumes.push(volume);
+                
+                currentPrice = close;
+            }
+
+            return data;
+        }
+
+        // 메인 차트 업데이트
+        function updateMainChart() {
+            const datasets = [];
+
+            if (currentChartType === 'candlestick') {
+                // 캔들스틱 데이터 (라인으로 시뮬레이션)
+                datasets.push({
+                    label: '종가',
+                    data: chartData.prices,
+                    borderColor: '#03C75A',
+                    backgroundColor: 'rgba(3, 199, 90, 0.1)',
+                    fill: false
+                });
+            } else if (currentChartType === 'line') {
+                datasets.push({
+                    label: '주가',
+                    data: chartData.prices,
+                    borderColor: '#03C75A',
+                    backgroundColor: 'transparent',
+                    fill: false
+                });
+            } else if (currentChartType === 'area') {
+                datasets.push({
+                    label: '주가',
+                    data: chartData.prices,
+                    borderColor: '#03C75A',
+                    backgroundColor: 'rgba(3, 199, 90, 0.2)',
+                    fill: true
+                });
+            }
+
+            // 거래량
+            if (indicators.volume) {
+                datasets.push({
+                    label: '거래량',
+                    data: chartData.volumes,
+                    backgroundColor: 'rgba(59, 130, 246, 0.3)',
+                    type: 'bar',
+                    yAxisID: 'volume'
+                });
+                mainChart.options.scales.volume.display = true;
+            } else {
+                mainChart.options.scales.volume.display = false;
+            }
+
+            // 이동평균
+            if (indicators.ma) {
+                const ma20 = calculateMovingAverage(chartData.prices, 20);
+                const ma60 = calculateMovingAverage(chartData.prices, 60);
+                
+                datasets.push({
+                    label: 'MA20',
+                    data: ma20,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    fill: false
+                });
+                
+                datasets.push({
+                    label: 'MA60',
+                    data: ma60,
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    fill: false
+                });
+            }
+
+            // 볼린저 밴드
+            if (indicators.bollinger) {
+                const bollinger = calculateBollingerBands(chartData.prices, 20, 2);
+                
+                datasets.push({
+                    label: '볼린저 상단',
+                    data: bollinger.upper,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'transparent',
+                    borderDash: [5, 5],
+                    fill: false
+                });
+                
+                datasets.push({
+                    label: '볼린저 하단',
+                    data: bollinger.lower,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'transparent',
+                    borderDash: [5, 5],
+                    fill: false
+                });
+            }
+
+            mainChart.data.labels = chartData.labels;
+            mainChart.data.datasets = datasets;
+            mainChart.update();
+
+            // 차트 제목 업데이트
+            document.getElementById('main-chart-title').textContent = 
+                `${currentSymbol} - ${getChartTypeName(currentChartType)} 차트`;
+        }
+
+        // 기술적 지표 업데이트
+        function updateTechnicalIndicators() {
+            // RSI 업데이트
+            const rsi = calculateRSI(chartData.prices, 14);
+            rsiChart.data.labels = chartData.labels;
+            rsiChart.data.datasets[0].data = rsi;
+            rsiChart.update();
+
+            // MACD 업데이트
+            const macd = calculateMACD(chartData.prices, 12, 26, 9);
+            macdChart.data.labels = chartData.labels;
+            macdChart.data.datasets[0].data = macd.macdLine;
+            macdChart.data.datasets[1].data = macd.signalLine;
+            macdChart.data.datasets[2].data = macd.histogram;
+            macdChart.update();
+        }
+
+        // 지표 요약 업데이트
+        function updateIndicatorsSummary() {
+            const summary = document.getElementById('indicators-summary');
+            const currentPrice = chartData.prices[chartData.prices.length - 1];
+            const previousPrice = chartData.prices[chartData.prices.length - 2];
+            const change = currentPrice - previousPrice;
+            const changePercent = (change / previousPrice) * 100;
+
+            const rsi = calculateRSI(chartData.prices, 14);
+            const currentRSI = rsi[rsi.length - 1];
+            
+            const ma20 = calculateMovingAverage(chartData.prices, 20);
+            const currentMA20 = ma20[ma20.length - 1];
+
+            const indicators = [
+                {
+                    label: '현재가',
+                    value: currentPrice.toLocaleString() + '원',
+                    description: `${change >= 0 ? '+' : ''}${change.toFixed(0)}원 (${changePercent.toFixed(2)}%)`,
+                    class: change >= 0 ? 'positive' : 'negative'
+                },
+                {
+                    label: 'RSI (14일)',
+                    value: currentRSI.toFixed(1),
+                    description: currentRSI > 70 ? '과매수' : currentRSI < 30 ? '과매도' : '중립',
+                    class: currentRSI > 70 ? 'negative' : currentRSI < 30 ? 'positive' : ''
+                },
+                {
+                    label: 'MA20 대비',
+                    value: ((currentPrice / currentMA20 - 1) * 100).toFixed(2) + '%',
+                    description: currentPrice > currentMA20 ? '상승 추세' : '하락 추세',
+                    class: currentPrice > currentMA20 ? 'positive' : 'negative'
+                },
+                {
+                    label: '거래량',
+                    value: (chartData.volumes[chartData.volumes.length - 1] / 1000000).toFixed(1) + 'M',
+                    description: '일일 거래량',
+                    class: ''
+                }
+            ];
+
+            summary.innerHTML = indicators.map(indicator => `
+                <div class="indicator-card">
+                    <div class="indicator-label">${indicator.label}</div>
+                    <div class="indicator-value ${indicator.class}">${indicator.value}</div>
+                    <div class="indicator-description">${indicator.description}</div>
+                </div>
+            `).join('');
+        }
+
+        // 종목 변경
+        function changeSymbol() {
+            currentSymbol = document.getElementById('symbol-select').value;
+            loadChartData();
+        }
+
+        // 기간 변경
+        function changePeriod() {
+            currentPeriod = document.getElementById('period-select').value;
+            loadChartData();
+        }
+
+        // 차트 유형 변경
+        function changeChartType() {
+            currentChartType = document.getElementById('chart-type').value;
+            updateMainChart();
+        }
+
+        // 지표 토글
+        function toggleIndicator(indicator) {
+            indicators[indicator] = !indicators[indicator];
+            
+            // 버튼 상태 업데이트
+            const buttons = document.querySelectorAll('.chart-options button');
+            buttons.forEach(btn => {
+                if (btn.textContent.includes(getIndicatorName(indicator))) {
+                    btn.classList.toggle('active', indicators[indicator]);
+                }
+            });
+            
+            updateMainChart();
+        }
+
+        // 매매신호 생성
+        function generateSignals() {
+            const signals = analyzeMarketSignals();
+            displayTradingSignals(signals);
+        }
+
+        // 백테스트 실행
+        function runBacktest() {
+            const results = performBacktest();
+            displayBacktestResults(results);
+            document.getElementById('backtest-section').style.display = 'block';
+        }
+
+        // 시장 신호 분석
+        function analyzeMarketSignals() {
+            const rsi = calculateRSI(chartData.prices, 14);
+            const currentRSI = rsi[rsi.length - 1];
+            
+            const ma20 = calculateMovingAverage(chartData.prices, 20);
+            const ma60 = calculateMovingAverage(chartData.prices, 60);
+            const currentPrice = chartData.prices[chartData.prices.length - 1];
+            const currentMA20 = ma20[ma20.length - 1];
+            const currentMA60 = ma60[ma60.length - 1];
+            
+            const macd = calculateMACD(chartData.prices, 12, 26, 9);
+            const currentMACD = macd.macdLine[macd.macdLine.length - 1];
+            const currentSignal = macd.signalLine[macd.signalLine.length - 1];
+
+            const signals = [];
+
+            // RSI 신호
+            if (currentRSI < 30) {
+                signals.push({
+                    type: 'buy',
+                    title: 'RSI 과매도 신호',
+                    strength: '강함',
+                    reason: `RSI ${currentRSI.toFixed(1)}로 과매도 구간`
+                });
+            } else if (currentRSI > 70) {
+                signals.push({
+                    type: 'sell',
+                    title: 'RSI 과매수 신호',
+                    strength: '강함',
+                    reason: `RSI ${currentRSI.toFixed(1)}로 과매수 구간`
+                });
+            }
+
+            // 이동평균 신호
+            if (currentPrice > currentMA20 && currentMA20 > currentMA60) {
+                signals.push({
+                    type: 'buy',
+                    title: '상승 추세 확인',
+                    strength: '중간',
+                    reason: '주가가 이동평균선 위에서 지지'
+                });
+            } else if (currentPrice < currentMA20 && currentMA20 < currentMA60) {
+                signals.push({
+                    type: 'sell',
+                    title: '하락 추세 확인',
+                    strength: '중간',
+                    reason: '주가가 이동평균선 아래로 이탈'
+                });
+            }
+
+            // MACD 신호
+            if (currentMACD > currentSignal && currentMACD > 0) {
+                signals.push({
+                    type: 'buy',
+                    title: 'MACD 상승 신호',
+                    strength: '중간',
+                    reason: 'MACD가 시그널선 위에서 상승'
+                });
+            } else if (currentMACD < currentSignal && currentMACD < 0) {
+                signals.push({
+                    type: 'sell',
+                    title: 'MACD 하락 신호',
+                    strength: '중간',
+                    reason: 'MACD가 시그널선 아래에서 하락'
+                });
+            }
+
+            // 신호가 없으면 보유 신호
+            if (signals.length === 0) {
+                signals.push({
+                    type: 'hold',
+                    title: '관망 신호',
+                    strength: '중립',
+                    reason: '명확한 매매 시점이 아님'
+                });
+            }
+
+            return signals;
+        }
+
+        // 매매신호 표시
+        function displayTradingSignals(signals) {
+            const container = document.getElementById('trading-signals');
+            
+            container.innerHTML = signals.map(signal => `
+                <div class="signal-card ${signal.type}">
+                    <div class="signal-title">${signal.title}</div>
+                    <div class="signal-strength">신호 강도: ${signal.strength}</div>
+                    <div class="signal-reason">${signal.reason}</div>
+                </div>
+            `).join('');
+        }
+
+        // 백테스트 수행
+        function performBacktest() {
+            // 간단한 백테스트 로직 (실제로는 더 복잡)
+            const initialInvestment = 10000000; // 1천만원
+            let currentValue = initialInvestment;
+            let maxValue = initialInvestment;
+            let minValue = initialInvestment;
+            let trades = 0;
+            let winningTrades = 0;
+
+            const ma20 = calculateMovingAverage(chartData.prices, 20);
+            let position = 0; // 0: 현금, 1: 매수
+            let buyPrice = 0;
+
+            for (let i = 20; i < chartData.prices.length; i++) {
+                const price = chartData.prices[i];
+                const ma = ma20[i];
+                const prevMA = ma20[i - 1];
+
+                // 골든크로스 (매수)
+                if (position === 0 && price > ma && chartData.prices[i - 1] <= prevMA) {
+                    position = 1;
+                    buyPrice = price;
+                    trades++;
+                }
+                // 데드크로스 (매도)
+                else if (position === 1 && price < ma && chartData.prices[i - 1] >= prevMA) {
+                    position = 0;
+                    const profit = (price - buyPrice) / buyPrice;
+                    currentValue *= (1 + profit);
+                    
+                    if (profit > 0) winningTrades++;
+                }
+
+                // 현재 포지션 가치 계산
+                let portfolioValue = currentValue;
+                if (position === 1) {
+                    portfolioValue = currentValue * (price / buyPrice);
+                }
+
+                maxValue = Math.max(maxValue, portfolioValue);
+                minValue = Math.min(minValue, portfolioValue);
+            }
+
+            const totalReturn = (currentValue - initialInvestment) / initialInvestment * 100;
+            const maxDrawdown = (maxValue - minValue) / maxValue * 100;
+            const winRate = trades > 0 ? (winningTrades / trades) * 100 : 0;
+
+            return {
+                totalReturn: totalReturn,
+                maxDrawdown: maxDrawdown,
+                trades: trades,
+                winRate: winRate,
+                finalValue: currentValue,
+                sharpeRatio: totalReturn / Math.max(maxDrawdown, 1) // 간단한 계산
+            };
+        }
+
+        // 백테스트 결과 표시
+        function displayBacktestResults(results) {
+            const container = document.getElementById('backtest-stats');
+            
+            const stats = [
+                {
+                    label: '총 수익률',
+                    value: results.totalReturn.toFixed(2) + '%',
+                    class: results.totalReturn >= 0 ? 'positive' : 'negative'
+                },
+                {
+                    label: '최대 낙폭',
+                    value: results.maxDrawdown.toFixed(2) + '%',
+                    class: 'negative'
+                },
+                {
+                    label: '거래 횟수',
+                    value: results.trades.toString(),
+                    class: ''
+                },
+                {
+                    label: '승률',
+                    value: results.winRate.toFixed(1) + '%',
+                    class: results.winRate >= 50 ? 'positive' : 'negative'
+                },
+                {
+                    label: '최종 자산',
+                    value: (results.finalValue / 10000).toFixed(0) + '만원',
+                    class: results.finalValue >= 10000000 ? 'positive' : 'negative'
+                },
+                {
+                    label: '샤프 비율',
+                    value: results.sharpeRatio.toFixed(2),
+                    class: results.sharpeRatio >= 1 ? 'positive' : 'negative'
+                }
+            ];
+
+            container.innerHTML = stats.map(stat => `
+                <div class="backtest-stat">
+                    <div class="backtest-stat-value ${stat.class}">${stat.value}</div>
+                    <div class="backtest-stat-label">${stat.label}</div>
+                </div>
+            `).join('');
+        }
+
+        // 유틸리티 함수들
+        function periodToDays(period) {
+            switch (period) {
+                case '1M': return 30;
+                case '3M': return 90;
+                case '6M': return 180;
+                case '1Y': return 365;
+                case '2Y': return 730;
+                default: return 90;
+            }
+        }
+
+        function getBasePrice(symbol) {
+            const prices = {
+                '삼성전자': 71900,
+                '카카오': 54200,
+                '네이버': 195000,
+                'SK하이닉스': 128500,
+                'LG화학': 378000
+            };
+            return prices[symbol] || 50000;
+        }
+
+        function getChartTypeName(type) {
+            const names = {
+                candlestick: '캔들스틱',
+                line: '라인',
+                area: '영역',
+                volume: '거래량'
+            };
+            return names[type] || type;
+        }
+
+        function getIndicatorName(indicator) {
+            const names = {
+                volume: '거래량',
+                ma: '이동평균',
+                bollinger: '볼린저밴드',
+                support: '지지/저항'
+            };
+            return names[indicator] || indicator;
+        }
+
+        // 기술적 지표 계산 함수들
+        function calculateMovingAverage(prices, period) {
+            const ma = [];
+            for (let i = 0; i < prices.length; i++) {
+                if (i < period - 1) {
+                    ma.push(null);
+                } else {
+                    const sum = prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+                    ma.push(sum / period);
+                }
+            }
+            return ma;
+        }
+
+        function calculateRSI(prices, period = 14) {
+            const rsi = [];
+            const gains = [];
+            const losses = [];
+
+            for (let i = 1; i < prices.length; i++) {
+                const change = prices[i] - prices[i - 1];
+                gains.push(change > 0 ? change : 0);
+                losses.push(change < 0 ? Math.abs(change) : 0);
+            }
+
+            for (let i = 0; i < gains.length; i++) {
+                if (i < period - 1) {
+                    rsi.push(null);
+                } else {
+                    const avgGain = gains.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+                    const avgLoss = losses.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+                    const rs = avgGain / (avgLoss || 0.01);
+                    rsi.push(100 - (100 / (1 + rs)));
+                }
+            }
+
+            return [null, ...rsi]; // 첫 번째 요소는 변화율이 없으므로 null 추가
+        }
+
+        function calculateMACD(prices, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+            const fastEMA = calculateEMA(prices, fastPeriod);
+            const slowEMA = calculateEMA(prices, slowPeriod);
+            const macdLine = [];
+
+            for (let i = 0; i < prices.length; i++) {
+                if (fastEMA[i] !== null && slowEMA[i] !== null) {
+                    macdLine.push(fastEMA[i] - slowEMA[i]);
+                } else {
+                    macdLine.push(null);
+                }
+            }
+
+            const signalLine = calculateEMA(macdLine.filter(v => v !== null), signalPeriod);
+            
+            // 신호선 길이를 MACD 라인과 맞춤
+            const adjustedSignalLine = new Array(macdLine.length - signalLine.length).fill(null).concat(signalLine);
+
+            const histogram = [];
+            for (let i = 0; i < macdLine.length; i++) {
+                if (macdLine[i] !== null && adjustedSignalLine[i] !== null) {
+                    histogram.push(macdLine[i] - adjustedSignalLine[i]);
+                } else {
+                    histogram.push(null);
+                }
+            }
+
+            return {
+                macdLine: macdLine,
+                signalLine: adjustedSignalLine,
+                histogram: histogram
+            };
+        }
+
+        function calculateEMA(prices, period) {
+            const ema = [];
+            const multiplier = 2 / (period + 1);
+            let sum = 0;
+            
+            // 첫 번째 EMA는 SMA로 시작
+            for (let i = 0; i < period; i++) {
+                if (prices[i] !== null) {
+                    sum += prices[i];
+                }
+                ema.push(null);
+            }
+            
+            if (period <= prices.length) {
+                ema[period - 1] = sum / period;
+                
+                for (let i = period; i < prices.length; i++) {
+                    if (prices[i] !== null) {
+                        ema[i] = (prices[i] * multiplier) + (ema[i - 1] * (1 - multiplier));
+                    } else {
+                        ema[i] = ema[i - 1];
+                    }
+                }
+            }
+            
+            return ema;
+        }
+
+        function calculateBollingerBands(prices, period = 20, stdDev = 2) {
+            const ma = calculateMovingAverage(prices, period);
+            const upper = [];
+            const lower = [];
+
+            for (let i = 0; i < prices.length; i++) {
+                if (i < period - 1) {
+                    upper.push(null);
+                    lower.push(null);
+                } else {
+                    const slice = prices.slice(i - period + 1, i + 1);
+                    const mean = ma[i];
+                    const variance = slice.reduce((sum, price) => sum + Math.pow(price - mean, 2), 0) / period;
+                    const standardDeviation = Math.sqrt(variance);
+                    
+                    upper.push(mean + (standardDeviation * stdDev));
+                    lower.push(mean - (standardDeviation * stdDev));
+                }
+            }
+
+            return { upper, lower, middle: ma };
+        }
+
+        // 알림 함수
+        function showError(message) {
+            showNotification(message, 'error');
+        }
+
+        function showSuccess(message) {
+            showNotification(message, 'success');
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? 'var(--npay-green)' : 'var(--error)'};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 10000;
+                max-width: 300px;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

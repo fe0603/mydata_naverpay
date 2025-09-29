@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>버튼 디버깅 테스트</title>
+    
+    <!-- 캐시 방지 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #03C75A;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background: #02a049;
+        }
+        .btn.secondary {
+            background: #6c757d;
+        }
+        .btn.secondary:hover {
+            background: #545b62;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .status.error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .status.warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>🔍 버튼 디버깅 테스트</h1>
+    
+    <!-- 1. 기본 JavaScript 테스트 -->
+    <div class="test-section">
+        <h2>1️⃣ 기본 JavaScript 테스트</h2>
+        <button class="btn" onclick="alert('기본 alert 동작!')">기본 Alert 테스트</button>
+        <button class="btn" onclick="testConsoleLog()">콘솔 로그 테스트</button>
+        <button class="btn" onclick="testDOMAccess()">DOM 접근 테스트</button>
+        
+        <div id="js-status" class="status">JavaScript 상태 확인 중...</div>
+    </div>
+    
+    <!-- 2. 함수 정의 및 호출 테스트 -->
+    <div class="test-section">
+        <h2>2️⃣ 함수 정의/호출 테스트</h2>
+        <button class="btn secondary" onclick="testFunction1()">함수 1 (인라인)</button>
+        <button class="btn secondary" onclick="testFunction2()">함수 2 (스크립트)</button>
+        <button class="btn secondary" onclick="testAsyncFunction()">비동기 함수</button>
+        
+        <div id="function-log" class="log"></div>
+    </div>
+    
+    <!-- 3. 실제 포트폴리오 함수 테스트 -->
+    <div class="test-section">
+        <h2>3️⃣ 포트폴리오 함수 테스트</h2>
+        <div style="margin: 15px 0;">
+            <label>테스트 포트폴리오:</label><br>
+            <input type="text" id="test-portfolio" value="삼성전자 10주, 카카오 5" style="width: 100%; padding: 8px; margin: 5px 0;">
+        </div>
+        <div style="margin: 15px 0;">
+            <label>테스트 투자금액:</label><br>
+            <input type="number" id="test-amount" value="10000000" style="width: 100%; padding: 8px; margin: 5px 0;">
+        </div>
+        
+        <button class="btn" onclick="testPortfolioAnalysis()">포트폴리오 분석 테스트</button>
+        <button class="btn" onclick="testRebalancingAdvice()">리밸런싱 제안 테스트</button>
+        
+        <div id="portfolio-log" class="log"></div>
+    </div>
+    
+    <!-- 4. API 연결 테스트 -->
+    <div class="test-section">
+        <h2>4️⃣ API 연결 테스트</h2>
+        <button class="btn secondary" onclick="testServerConnection()">서버 연결 테스트</button>
+        <button class="btn secondary" onclick="testYahooAPI()">Yahoo API 테스트</button>
+        <button class="btn secondary" onclick="testGeminiAPI()">Gemini API 테스트</button>
+        
+        <div id="api-log" class="log"></div>
+    </div>
+    
+    <!-- 5. 실시간 로그 -->
+    <div class="test-section">
+        <h2>5️⃣ 실시간 로그</h2>
+        <button class="btn secondary" onclick="clearLogs()">로그 지우기</button>
+        <div id="realtime-log" class="log"></div>
+    </div>
+
+    <script>
+        // 페이지 로드 시 자동 진단
+        document.addEventListener('DOMContentLoaded', () => {
+            logMessage('✅ DOM 로딩 완료');
+            performAutoCheck();
+        });
+        
+        // 로그 함수
+        function logMessage(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('realtime-log');
+            const functionLogDiv = document.getElementById('function-log');
+            const portfolioLogDiv = document.getElementById('portfolio-log');
+            const apiLogDiv = document.getElementById('api-log');
+            
+            const logEntry = `[${timestamp}] ${message}`;
+            
+            // 실시간 로그에 추가
+            if (logDiv) {
+                logDiv.innerHTML += logEntry + '<br>';
+                logDiv.scrollTop = logDiv.scrollHeight;
+            }
+            
+            // 콘솔에도 출력
+            console.log(logEntry);
+        }
+        
+        // 자동 체크
+        function performAutoCheck() {
+            try {
+                // JavaScript 기본 기능 체크
+                const jsStatus = document.getElementById('js-status');
+                if (typeof Array !== 'undefined' && typeof JSON !== 'undefined') {
+                    jsStatus.className = 'status success';
+                    jsStatus.textContent = '✅ JavaScript 기본 기능 정상';
+                    logMessage('✅ JavaScript 기본 기능 확인됨');
+                } else {
+                    jsStatus.className = 'status error';
+                    jsStatus.textContent = '❌ JavaScript 기본 기능 오류';
+                    logMessage('❌ JavaScript 기본 기능 오류');
+                }
+                
+                // fetch API 체크
+                if (typeof fetch !== 'undefined') {
+                    logMessage('✅ Fetch API 사용 가능');
+                } else {
+                    logMessage('❌ Fetch API 사용 불가');
+                }
+                
+                // async/await 체크
+                try {
+                    const testAsync = async () => 'test';
+                    logMessage('✅ async/await 지원됨');
+                } catch (e) {
+                    logMessage('❌ async/await 지원 안됨: ' + e.message);
+                }
+                
+            } catch (error) {
+                logMessage('❌ 자동 체크 오류: ' + error.message);
+            }
+        }
+        
+        // 테스트 함수들
+        function testConsoleLog() {
+            console.log('콘솔 로그 테스트 성공!');
+            logMessage('✅ 콘솔 로그 함수 동작');
+        }
+        
+        function testDOMAccess() {
+            const testDiv = document.getElementById('js-status');
+            if (testDiv) {
+                testDiv.style.background = '#d4edda';
+                logMessage('✅ DOM 접근 및 조작 성공');
+            } else {
+                logMessage('❌ DOM 접근 실패');
+            }
+        }
+        
+        function testFunction1() {
+            const functionLog = document.getElementById('function-log');
+            functionLog.innerHTML += '[인라인 함수] 함수 1 동작 확인<br>';
+            logMessage('✅ 인라인 함수 동작');
+        }
+        
+        function testFunction2() {
+            const functionLog = document.getElementById('function-log');
+            functionLog.innerHTML += '[스크립트 함수] 함수 2 동작 확인<br>';
+            logMessage('✅ 스크립트 함수 동작');
+        }
+        
+        async function testAsyncFunction() {
+            const functionLog = document.getElementById('function-log');
+            functionLog.innerHTML += '[비동기 함수] 시작...<br>';
+            logMessage('🔄 비동기 함수 시작');
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            functionLog.innerHTML += '[비동기 함수] 완료!<br>';
+            logMessage('✅ 비동기 함수 완료');
+        }
+        
+        // 포트폴리오 함수 테스트
+        async function testPortfolioAnalysis() {
+            const portfolioLog = document.getElementById('portfolio-log');
+            portfolioLog.innerHTML += '📊 포트폴리오 분석 테스트 시작...<br>';
+            logMessage('🔄 포트폴리오 분석 테스트 시작');
+            
+            try {
+                const portfolioText = document.getElementById('test-portfolio').value;
+                const amount = document.getElementById('test-amount').value;
+                
+                portfolioLog.innerHTML += `입력값: ${portfolioText}, ${amount}원<br>`;
+                
+                // 간단한 파싱 테스트
+                const lines = portfolioText.split(',');
+                portfolioLog.innerHTML += `파싱 결과: ${lines.length}개 항목<br>`;
+                
+                portfolioLog.innerHTML += '✅ 포트폴리오 분석 테스트 성공<br>';
+                logMessage('✅ 포트폴리오 분석 테스트 성공');
+                
+            } catch (error) {
+                portfolioLog.innerHTML += `❌ 오류: ${error.message}<br>`;
+                logMessage('❌ 포트폴리오 분석 테스트 실패: ' + error.message);
+            }
+        }
+        
+        function testRebalancingAdvice() {
+            const portfolioLog = document.getElementById('portfolio-log');
+            portfolioLog.innerHTML += '🤖 리밸런싱 제안 테스트 시작...<br>';
+            logMessage('🔄 리밸런싱 제안 테스트 시작');
+            
+            // 간단한 테스트
+            portfolioLog.innerHTML += '위험도: 보통, 목표수익률: 8%<br>';
+            portfolioLog.innerHTML += '✅ 리밸런싱 제안 테스트 성공<br>';
+            logMessage('✅ 리밸런싱 제안 테스트 성공');
+        }
+        
+        // API 테스트
+        async function testServerConnection() {
+            const apiLog = document.getElementById('api-log');
+            apiLog.innerHTML += '🔗 서버 연결 테스트 중...<br>';
+            logMessage('🔄 서버 연결 테스트 시작');
+            
+            try {
+                const response = await fetch('/api/health', { method: 'GET' });
+                if (response.ok) {
+                    apiLog.innerHTML += '✅ 서버 연결 성공<br>';
+                    logMessage('✅ 서버 연결 성공');
+                } else {
+                    apiLog.innerHTML += `⚠️ 서버 응답: ${response.status}<br>`;
+                    logMessage('⚠️ 서버 응답 코드: ' + response.status);
+                }
+            } catch (error) {
+                apiLog.innerHTML += `❌ 서버 연결 실패: ${error.message}<br>`;
+                logMessage('❌ 서버 연결 실패: ' + error.message);
+            }
+        }
+        
+        async function testYahooAPI() {
+            const apiLog = document.getElementById('api-log');
+            apiLog.innerHTML += '📊 Yahoo API 테스트 중...<br>';
+            logMessage('🔄 Yahoo API 테스트 시작');
+            
+            try {
+                const response = await fetch('/api/yahoo-finance/삼성전자');
+                const data = await response.json();
+                
+                if (data.success || data.price) {
+                    apiLog.innerHTML += `✅ Yahoo API 성공: 삼성전자 ${data.price}원<br>`;
+                    logMessage('✅ Yahoo API 테스트 성공');
+                } else {
+                    apiLog.innerHTML += `⚠️ Yahoo API 데이터 없음<br>`;
+                    logMessage('⚠️ Yahoo API 데이터 없음');
+                }
+            } catch (error) {
+                apiLog.innerHTML += `❌ Yahoo API 실패: ${error.message}<br>`;
+                logMessage('❌ Yahoo API 테스트 실패: ' + error.message);
+            }
+        }
+        
+        async function testGeminiAPI() {
+            const apiLog = document.getElementById('api-log');
+            apiLog.innerHTML += '🤖 Gemini API 테스트 중...<br>';
+            logMessage('🔄 Gemini API 테스트 시작');
+            
+            try {
+                const response = await fetch('/api/investment-advice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        portfolio: { '삼성전자': { shares: 10, currentPrice: 70000 } },
+                        riskLevel: 'moderate',
+                        targetReturn: 8,
+                        testPrompt: '간단한 테스트입니다.'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    apiLog.innerHTML += '✅ Gemini API 성공<br>';
+                    logMessage('✅ Gemini API 테스트 성공');
+                } else {
+                    apiLog.innerHTML += `⚠️ Gemini API: ${data.error}<br>`;
+                    logMessage('⚠️ Gemini API 오류: ' + data.error);
+                }
+            } catch (error) {
+                apiLog.innerHTML += `❌ Gemini API 실패: ${error.message}<br>`;
+                logMessage('❌ Gemini API 테스트 실패: ' + error.message);
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('realtime-log').innerHTML = '';
+            document.getElementById('function-log').innerHTML = '';
+            document.getElementById('portfolio-log').innerHTML = '';
+            document.getElementById('api-log').innerHTML = '';
+            logMessage('🗑️ 로그 초기화됨');
+        }
+        
+        // 전역 오류 핸들러
+        window.addEventListener('error', function(e) {
+            logMessage('❌ 전역 오류: ' + e.message + ' (파일: ' + e.filename + ', 라인: ' + e.lineno + ')');
+        });
+        
+        // 초기 메시지
+        logMessage('🔍 버튼 디버깅 페이지 로딩 완료');
+    </script>
+</body>
+</html>

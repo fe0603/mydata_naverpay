@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마이데이터 투자 제안 시스템 - 시장 데이터 연동</title>
+    
+    <!-- 개발 중 캐시 방지 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Last-Modified" content="0">
+    <meta http-equiv="If-Modified-Since" content="0">
+    
+    <!-- PWA 메타 태그 -->
+    <meta name="description" content="네이버페이 연동 AI 기반 실시간 투자 리밸런싱 서비스">
+    <meta name="theme-color" content="#03C75A">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="마이데이터 투자">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- PWA 매니페스트 -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- 파비콘 및 아이콘 -->
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="assets/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="assets/icon-120x120.png">
+    
+    <!-- 스타일시트 (캐시 방지) -->
+    <link rel="stylesheet" href="style.css" id="main-css">
+    
+    <!-- 외부 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 성능 최적화 (캐시 방지) -->
+    <script src="optimize.js" id="optimize-js"></script>
+    
+    <!-- 개발 중 자동 캐시 방지 스크립트 -->
+    <script>
+        // 페이지 로드 시 CSS와 JS 파일에 타임스탬프 추가
+        (function() {
+            const timestamp = Date.now();
+            
+            // CSS 파일 캐시 방지
+            const cssLink = document.getElementById('main-css');
+            if (cssLink) {
+                cssLink.href = `style.css?v=${timestamp}`;
+            }
+            
+            // JS 파일 캐시 방지
+            const jsScript = document.getElementById('optimize-js');
+            if (jsScript) {
+                jsScript.src = `optimize.js?v=${timestamp}`;
+            }
+            
+            console.log(`🔄 캐시 방지 타임스탬프: ${timestamp}`);
+        })();
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🚀 마이데이터 투자 제안 시스템</h1>
+            <div class="naverpay-logo">
+                <!-- 네이버페이 시그니처 로고 위치 (실제 서비스에서는 승인된 로고 사용) -->
+                <div class="logo-placeholder">Npay 연동</div>
+            </div>
+        </header>
+
+        <main class="main">
+            <!-- 1단계: 현재 포트폴리오 입력 -->
+            <section class="section" id="portfolio-section">
+                <h2>📊 현재 포트폴리오</h2>
+                <div class="portfolio-form">
+                    <div class="form-group">
+                        <label for="current-portfolio">보유 종목 입력:</label>
+                        <textarea id="current-portfolio" placeholder="예시: 삼성전자 10주, 카카오 5, 네이버3 (주 단위 생략 가능)"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="investment-amount">총 투자금액:</label>
+                        <input type="number" id="investment-amount" placeholder="10000000" min="0">
+                        <span class="unit">원</span>
+                    </div>
+                    <button class="btn primary" onclick="analyzePortfolioSimple()">포트폴리오 분석</button>
+                </div>
+            </section>
+
+            <!-- 2단계: 실시간 시장 데이터 -->
+            <section class="section" id="market-section">
+                <h2>📈 실시간 시장 데이터</h2>
+                <div class="market-controls">
+                    <button class="btn secondary" onclick="fetchMarketData('yahoo')">야후 파이낸스 데이터</button>
+                    <button class="btn secondary" onclick="fetchMarketData('kis')">KIS API 데이터</button>
+                    <button class="btn secondary" onclick="fetchMarketData('sample')">샘플 데이터</button>
+                </div>
+                
+                <div class="market-data" id="market-data">
+                    <div class="loading" id="loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>시장 데이터를 가져오는 중...</p>
+                    </div>
+                    
+                    <div class="stock-grid" id="stock-grid">
+                        <!-- 동적으로 생성될 주식 데이터 -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3단계: 리밸런싱 제안 -->
+            <section class="section" id="rebalancing-section">
+                <h2>⚖️ 리밸런싱 제안</h2>
+                
+                <!-- 네이버페이 혜택 배지 -->
+                <div class="benefit-badge">
+                    <span class="badge-text">Npay 결제 시 최대 2% 적립</span>
+                </div>
+                
+                <div class="rebalancing-controls">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="risk-level">위험 수준:</label>
+                            <select id="risk-level">
+                                <option value="conservative">안정형 (Conservative)</option>
+                                <option value="moderate" selected>균형형 (Moderate)</option>
+                                <option value="aggressive">공격형 (Aggressive)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="target-return">목표 수익률:</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="target-return" placeholder="8" min="1" max="30">
+                                <span class="unit">%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn primary" onclick="generateRebalancingAdvice()">AI 리밸런싱 제안</button>
+                </div>
+                
+                <div class="rebalancing-result" id="rebalancing-result">
+                    <!-- AI 생성 리밸런싱 제안이 여기에 표시됩니다 -->
+                </div>
+                
+                <!-- 차트 영역 -->
+                <div class="chart-container">
+                    <canvas id="portfolioChart" width="800" height="400"></canvas>
+                </div>
+            </section>
+
+            <!-- 성능 모니터링 -->
+            <section class="section" id="performance-section" style="background: #f8f9fa; border: 1px solid #dee2e6;">
+                <h2>📊 성능 모니터링</h2>
+                <div class="performance-metrics">
+                    <div class="metric-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0;">
+                        <div class="metric-card" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.9em; color: #6c757d;">페이지 로딩 시간</div>
+                            <div id="page-load-time" style="font-size: 1.5em; font-weight: bold; color: #03C75A;">측정 중...</div>
+                        </div>
+                        <div class="metric-card" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.9em; color: #6c757d;">API 응답 시간</div>
+                            <div id="api-response-time" style="font-size: 1.5em; font-weight: bold; color: #17a2b8;">0ms</div>
+                        </div>
+                        <div class="metric-card" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.9em; color: #6c757d;">메모리 사용량</div>
+                            <div id="memory-usage" style="font-size: 1.5em; font-weight: bold; color: #ffc107;">N/A</div>
+                        </div>
+                        <div class="metric-card" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.9em; color: #6c757d;">네트워크 상태</div>
+                            <div id="network-status" style="font-size: 1.5em; font-weight: bold; color: #28a745;">양호</div>
+                        </div>
+                    </div>
+                    <button class="btn secondary" onclick="showDetailedReport()" style="margin-top: 10px;">
+                        📈 상세 성능 리포트 보기
+                    </button>
+                </div>
+            </section>
+
+            <!-- 4단계: 액션 플랜 -->
+            <section class="section" id="action-section">
+                <h2>📋 실행 계획</h2>
+                <div class="action-plan" id="action-plan">
+                    <!-- 구체적인 매매 제안이 여기에 표시됩니다 -->
+                </div>
+                
+                <div class="export-options">
+                    <button class="btn secondary" onclick="exportToPDF()">📄 PDF 다운로드</button>
+                    <button class="btn secondary" onclick="saveToLocalStorage()">💾 로컬 저장</button>
+                    <button class="btn primary npay-button" onclick="connectNpay()">
+                        <span class="npay-logo">N</span>
+                        네이버페이 연결
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- 면책조항 -->
+        <footer class="disclaimer">
+            <p>⚠️ <strong>투자 위험 고지:</strong> 모든 투자에는 원금 손실의 위험이 있습니다. 이 제안은 참고용이며, 실제 투자 결정은 신중히 하시기 바랍니다.</p>
+            <p>📜 금융투자업법에 따라 투자 권유가 아닌 정보 제공 목적입니다.</p>
+        </footer>
+    </div>
+
+    <!-- 모든 기능을 여기에 통합 -->
+    <script>
+        // 간단한 포트폴리오 분석 함수 (실시간 데이터)
+        async function analyzePortfolioSimple() {
+            console.log('🔍 실시간 포트폴리오 분석 시작');
+            
+            let portfolioText, investmentAmount;
+            
+            try {
+                portfolioText = document.getElementById('current-portfolio').value;
+                investmentAmount = document.getElementById('investment-amount').value;
+                
+                console.log('📊 입력값:', { portfolioText, investmentAmount });
+                
+                if (!portfolioText || !investmentAmount) {
+                    alert('포트폴리오와 투자금액을 모두 입력해주세요.');
+                    return;
+                }
+                
+                // 로딩 표시
+                showQuickNotification('실시간 주가 정보를 조회하고 있습니다...', 'info');
+                
+                // 실시간 포트폴리오 파싱
+                const portfolio = await parsePortfolioQuick(portfolioText);
+                const amount = parseInt(investmentAmount);
+                
+                console.log('📊 실시간 포트폴리오 데이터:', portfolio);
+                
+                // 결과 표시
+                displayAnalysisResult(portfolio, amount);
+                
+                // 차트 생성
+                createPortfolioChart(portfolio, amount);
+                
+                // 실시간 데이터 사용 여부 표시
+                const realTimeCount = Object.values(portfolio).filter(stock => stock.isRealTime).length;
+                const totalCount = Object.keys(portfolio).length;
+                
+                if (realTimeCount === totalCount) {
+                    showQuickNotification(`✅ 분석 완료! (실시간 데이터 ${realTimeCount}/${totalCount})`, 'success');
+                } else if (realTimeCount > 0) {
+                    showQuickNotification(`⚠️ 분석 완료! (실시간 ${realTimeCount}/${totalCount}, 나머지는 추정가)`, 'warning');
+                } else {
+                    showQuickNotification('⚠️ 분석 완료! (추정 데이터 사용)', 'warning');
+                }
+                
+                
+            } catch (error) {
+                console.error('❌ 포트폴리오 분석 오류:', error);
+                alert('오류가 발생했습니다: ' + error.message);
+                return;
+            }
+        }
+        
+        // AI 리밸런싱 제안 함수 (실제 Gemini API)
+        async function generateRebalancingAdvice() {
+            console.log('🤖 실제 AI 리밸런싱 제안 시작');
+            
+            try {
+                // 요소 존재 확인 및 데이터 수집
+                const riskElement = document.getElementById('risk-level');
+                const targetReturnElement = document.getElementById('target-return');
+                const portfolioElement = document.getElementById('current-portfolio');
+                const investmentAmountElement = document.getElementById('investment-amount');
+                
+                if (!riskElement || !targetReturnElement || !portfolioElement || !investmentAmountElement) {
+                    alert('필수 입력 항목이 누락되었습니다.');
+                    return;
+                }
+                
+                const riskTolerance = riskElement.value;
+                const targetReturn = targetReturnElement.value;
+                const portfolioText = portfolioElement.value;
+                const investmentAmount = investmentAmountElement.value;
+                
+                console.log('📊 입력 데이터:', { riskTolerance, targetReturn, portfolioText, investmentAmount });
+                
+                if (!riskTolerance || !targetReturn || !portfolioText || !investmentAmount) {
+                    alert('모든 필드를 입력해주세요.');
+                    return;
+                }
+                
+                // 로딩 표시
+                const resultDiv = document.getElementById('rebalancing-result');
+                resultDiv.innerHTML = `
+                    <div style="text-align: center; padding: 30px;">
+                        <div class="spinner" style="margin: 0 auto 20px;"></div>
+                        <p>🤖 AI가 최적의 리밸런싱 전략을 분석하고 있습니다...</p>
+                        <p style="font-size: 0.9em; color: #666;">실시간 시장 데이터와 포트폴리오를 분석 중입니다.</p>
+                    </div>
+                `;
+                
+                // 현재 포트폴리오 파싱 (실시간 데이터 포함)
+                const portfolio = await parsePortfolioQuick(portfolioText);
+                
+                // Gemini AI API 호출
+                const requestData = {
+                    portfolio: portfolio,
+                    riskLevel: riskTolerance,
+                    targetReturn: parseFloat(targetReturn),
+                    investmentAmount: parseInt(investmentAmount),
+                    marketData: {
+                        timestamp: new Date().toISOString(),
+                        portfolioData: portfolio
+                    }
+                };
+                
+                console.log('🤖 Gemini AI API 호출 중...');
+                
+                const response = await fetch('/api/investment-advice', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': 'demo_key' // 실제 환경에서는 실제 API 키 사용
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('✅ AI 리밸런싱 제안 완료');
+                    
+                    // AI 제안 결과 표시
+                    resultDiv.innerHTML = `
+                        <div class="ai-advice-container">
+                            <h3 style="color: #03C75A; margin-bottom: 20px;">🤖 AI 리밸런싱 제안</h3>
+                            <div class="advice-content" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                                ${result.advice.replace(/\n/g, '<br>')}
+                            </div>
+                            <div class="risk-warning" style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                                <strong>⚠️ 투자 위험 고지:</strong><br>
+                                ${result.riskWarning}
+                            </div>
+                            <div class="api-info" style="font-size: 0.8em; color: #666; margin-top: 10px; text-align: right;">
+                                생성 시간: ${new Date(result.timestamp).toLocaleString()}<br>
+                                모델: ${result.apiUsage?.model || 'Gemini AI'} | 응답 길이: ${result.apiUsage?.responseLength || 'N/A'}자
+                            </div>
+                        </div>
+                    `;
+                    
+                    showQuickNotification('✅ AI 리밸런싱 제안이 완료되었습니다!', 'success');
+                } else {
+                    console.error('❌ AI 제안 실패:', result.error);
+                    
+                    if (result.error.includes('API 키')) {
+                        // API 키 없을 때 데모 제안 표시
+                        showDemoRebalancingAdvice(riskTolerance);
+                        showQuickNotification('⚠️ 데모 모드: 실제 API 키가 필요합니다', 'warning');
+                    } else {
+                        resultDiv.innerHTML = `
+                            <div style="color: #dc3545; padding: 20px; text-align: center;">
+                                <h4>❌ AI 제안 생성 실패</h4>
+                                <p>${result.error}</p>
+                                <button class="btn secondary" onclick="showDemoRebalancingAdvice('${riskTolerance}')">데모 제안 보기</button>
+                            </div>
+                        `;
+                        showQuickNotification('❌ AI 제안 생성에 실패했습니다', 'error');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('AI 리밸런싱 제안 오류:', error);
+                const resultDiv = document.getElementById('rebalancing-result');
+                resultDiv.innerHTML = `
+                    <div style="color: #dc3545; padding: 20px; text-align: center;">
+                        <h4>❌ 네트워크 오류</h4>
+                        <p>AI 서비스에 연결할 수 없습니다: ${error.message}</p>
+                        <button class="btn secondary" onclick="generateRebalancingAdvice()">다시 시도</button>
+                    </div>
+                `;
+                showQuickNotification('❌ 네트워크 오류가 발생했습니다', 'error');
+            }
+        }
+        
+        // 데모 리밸런싱 제안 (백업용)
+        function showDemoRebalancingAdvice(riskTolerance) {
+            const resultDiv = document.getElementById('rebalancing-result');
+            console.log('📊 데모 리밸런싱 제안 표시:', riskTolerance);
+            
+            if (!riskTolerance) {
+                alert('위험도를 선택해주세요.');
+                return;
+            }
+                
+                // 상세한 리밸런싱 조언 생성
+                const advice = {
+                    conservative: `
+                        <strong>안정 중심 포트폴리오 권장:</strong><br>
+                        • 한국 국고채권 30%, 회사채 20%<br>
+                        • 대형 우량주 (삼성전자, LG화학) 30%<br>
+                        • 배당주 및 리츠 20%<br>
+                        • 예상 수익률: 연 4-6%, 변동성 낮음
+                    `,
+                    moderate: `
+                        <strong>균형 잡힌 포트폴리오 권장:</strong><br>
+                        • 국내 주식 40% (대형주 25%, 중소형주 15%)<br>
+                        • 해외 주식 20% (미국 ETF 위주)<br>
+                        • 채권 30% (국고채, 회사채 혼합)<br>
+                        • 대안투자 10% (리츠, 원자재)<br>
+                        • 예상 수익률: 연 6-8%, 적정 변동성
+                    `,
+                    aggressive: `
+                        <strong>성장 중심 포트폴리오 권장:</strong><br>
+                        • 국내 성장주 40% (기술주, 바이오 포함)<br>
+                        • 해외 성장주 30% (나스닥 ETF, 신흥국)<br>
+                        • 테마주 20% (AI, 반도체, 신재생에너지)<br>
+                        • 현금 10% (기회 투자용)<br>
+                        • 예상 수익률: 연 8-12%, 높은 변동성 감수
+                    `
+                };
+                
+                const result = advice[riskTolerance] || "위험도에 맞는 조언을 생성할 수 없습니다.";
+                console.log('📊 생성된 조언:', result);
+                
+                // 결과 표시
+                const resultContainer = document.getElementById('rebalancing-result');
+                console.log('📊 결과 컨테이너 찾기:', resultContainer);
+                
+                if (resultContainer) {
+                    resultContainer.innerHTML = `
+                        <div class="ai-advice" style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-top: 20px; border-left: 4px solid #03C75A;">
+                            <h4 style="color: #03C75A; margin-bottom: 15px;">🤖 AI 리밸런싱 조언</h4>
+                            <p style="margin-bottom: 10px;"><strong>선택한 위험도:</strong> ${riskTolerance}</p>
+                            <p style="margin-bottom: 15px; font-size: 16px; line-height: 1.5;"><strong>조언:</strong> ${result}</p>
+                            <p style="color: #e74c3c; font-size: 0.9em; margin: 0;">⚠️ 이는 예시 조언입니다. 실제 투자 결정 시 전문가와 상담하세요.</p>
+                        </div>
+                    `;
+                    resultContainer.style.display = 'block';
+                    
+                    // 결과 영역으로 스크롤
+                    resultContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    console.log('✅ 결과 표시 및 스크롤 완료');
+                } else {
+                    console.error('❌ rebalancing-result 요소를 찾을 수 없습니다');
+                    alert('결과를 표시할 영역을 찾을 수 없습니다.');
+                }
+                
+                showQuickNotification('🤖 AI 리밸런싱 조언이 생성되었습니다!', 'success');
+                console.log('✅ AI 리밸런싱 함수 완료');
+                
+            } catch (error) {
+                console.error('❌ AI 리밸런싱 오류:', error);
+                alert('오류가 발생했습니다: ' + error.message);
+            }
+        }
+        
+        // 포트폴리오 차트 생성
+        let portfolioChart = null;
+        
+        function createPortfolioChart(portfolio, totalAmount) {
+            console.log('📊 차트 생성 시작');
+            
+            const ctx = document.getElementById('portfolioChart');
+            if (!ctx) {
+                console.error('❌ 차트 캔버스를 찾을 수 없습니다');
+                return;
+            }
+            
+            // 기존 차트 삭제
+            if (portfolioChart) {
+                portfolioChart.destroy();
+            }
+            
+            // 데이터 준비
+            const labels = Object.keys(portfolio);
+            const data = Object.values(portfolio).map(stock => stock.shares * stock.currentPrice);
+            const colors = [
+                '#03C75A', // 네이버페이 그린
+                '#FF6B6B', // 레드
+                '#4ECDC4', // 터콰이즈
+                '#45B7D1', // 블루
+                '#96CEB4', // 민트
+                '#FFEAA7', // 옐로우
+                '#DDA0DD', // 퍼플
+                '#F7DC6F'  // 골드
+            ];
+            
+            try {
+                portfolioChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '포트폴리오 구성',
+                            data: data,
+                            backgroundColor: colors.slice(0, labels.length),
+                            borderColor: '#ffffff',
+                            borderWidth: 2,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: '📊 포트폴리오 자산 구성',
+                                font: {
+                                    size: 18,
+                                    weight: 'bold'
+                                },
+                                color: '#333'
+                            },
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    font: {
+                                        size: 12
+                                    },
+                                    generateLabels: function(chart) {
+                                        const data = chart.data;
+                                        return data.labels.map((label, i) => {
+                                            const value = data.datasets[0].data[i];
+                                            const percentage = ((value / totalAmount) * 100).toFixed(1);
+                                            return {
+                                                text: `${label}: ${value.toLocaleString()}원 (${percentage}%)`,
+                                                fillStyle: data.datasets[0].backgroundColor[i],
+                                                strokeStyle: data.datasets[0].borderColor,
+                                                lineWidth: data.datasets[0].borderWidth,
+                                                hidden: false,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed;
+                                        const percentage = ((value / totalAmount) * 100).toFixed(1);
+                                        return `${label}: ${value.toLocaleString()}원 (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        animation: {
+                            animateRotate: true,
+                            duration: 1500
+                        }
+                    }
+                });
+                
+                console.log('✅ 차트 생성 완료');
+                
+            } catch (error) {
+                console.error('❌ 차트 생성 오류:', error);
+                
+                // 차트 생성 실패 시 대체 메시지 표시
+                ctx.style.display = 'none';
+                const container = ctx.parentElement;
+                container.innerHTML = `
+                    <div style="height: 400px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6c757d; flex-direction: column;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                        <div>차트를 표시할 수 없습니다</div>
+                        <div style="font-size: 0.9em; margin-top: 5px;">데이터는 위의 분석 결과에서 확인하세요</div>
+                    </div>
+                `;
+            }
+        }
+        
+        // 성능 리포트 표시
+        function showDetailedReport() {
+            console.log('📊 상세 성능 리포트 요청');
+            
+            if (typeof getPerformanceReport === 'function') {
+                const report = getPerformanceReport();
+                
+                const reportHtml = `
+                    <div style="background: white; padding: 20px; border-radius: 10px; margin: 20px 0; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                        <h3 style="color: #03C75A; margin-bottom: 15px;">📊 성능 분석 리포트</h3>
+                        <div style="margin-bottom: 15px;">
+                            <h4>현재 상태:</h4>
+                            <ul style="list-style: none; padding: 0;">
+                                <li>📈 페이지 로딩: ${report.현재_상태?.페이지_로딩 || 'N/A'}</li>
+                                <li>⚡ 평균 로딩: ${report.현재_상태?.평균_로딩 || 'N/A'}</li>
+                                <li>🌐 API 호출수: ${report.현재_상태?.API_호출수 || 0}</li>
+                                <li>💾 메모리 사용량: ${report.현재_상태?.메모리_사용량 || 'N/A'}</li>
+                                <li>📶 네트워크: ${report.현재_상태?.네트워크 || 'N/A'}</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>권장사항:</h4>
+                            <ul>
+                                ${report.권장사항?.map(suggestion => `<li>${suggestion}</li>`).join('') || '<li>데이터 수집 중...</li>'}
+                            </ul>
+                        </div>
+                        <button onclick="this.parentElement.style.display='none'" style="margin-top: 10px; padding: 5px 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">닫기</button>
+                    </div>
+                `;
+                
+                const existingReport = document.querySelector('.performance-report');
+                if (existingReport) {
+                    existingReport.remove();
+                }
+                
+                const reportDiv = document.createElement('div');
+                reportDiv.className = 'performance-report';
+                reportDiv.innerHTML = reportHtml;
+                
+                const performanceSection = document.getElementById('performance-section');
+                performanceSection.appendChild(reportDiv);
+                
+                reportDiv.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                alert('성능 리포트 시스템이 아직 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+            }
+        }
+        
+        // 실시간 성능 메트릭 업데이트
+        function updatePerformanceMetrics() {
+            // 페이지 로딩 시간 업데이트
+            if (typeof performance !== 'undefined' && performance.timing) {
+                const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+                if (loadTime > 0) {
+                    document.getElementById('page-load-time').textContent = `${loadTime}ms`;
+                }
+            }
+            
+            // 메모리 사용량 업데이트
+            if (performance.memory) {
+                const memoryUsage = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+                document.getElementById('memory-usage').textContent = `${memoryUsage}MB`;
+            }
+            
+            // 네트워크 상태 업데이트
+            if (navigator.connection) {
+                const connection = navigator.connection;
+                const networkType = connection.effectiveType || 'unknown';
+                document.getElementById('network-status').textContent = networkType;
+            }
+        }
+        
+        // 개선된 포트폴리오 파싱 (실시간 가격 조회)
+        async function parsePortfolioQuick(text) {
+            const portfolio = {};
+            const lines = text.split(/[,\n]/);
+            
+            // 주식 이름과 주수를 먼저 파싱
+            const stockList = [];
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed) {
+                    // 패턴 1: "삼성전자 10주" 형태
+                    let match = trimmed.match(/(.+?)\s*(\d+)\s*주/);
+                    
+                    if (match) {
+                        const stockName = match[1].trim();
+                        const shares = parseInt(match[2]);
+                        stockList.push({ stockName, shares });
+                    } else {
+                        // 패턴 2: "삼성전자 10" 형태 (주 없이 숫자만)
+                        match = trimmed.match(/(.+?)\s+(\d+)$/);
+                        
+                        if (match) {
+                            const stockName = match[1].trim();
+                            const shares = parseInt(match[2]);
+                            stockList.push({ stockName, shares });
+                        } else {
+                            // 패턴 3: "삼성전자10" 형태 (공백 없이)
+                            match = trimmed.match(/^(.+?)(\d+)$/);
+                            
+                            if (match && match[1].length > 1) { // 종목명이 최소 2글자 이상
+                                const stockName = match[1].trim();
+                                const shares = parseInt(match[2]);
+                                
+                                // 종목명이 숫자로만 구성되지 않은 경우에만 추가
+                                if (!/^\d+$/.test(stockName)) {
+                                    stockList.push({ stockName, shares });
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 실시간 가격 조회 (병렬 처리)
+            console.log('📊 실시간 가격 조회 시작...');
+            const pricePromises = stockList.map(async ({ stockName, shares }) => {
+                const priceData = await getRealTimePrice(stockName);
+                return {
+                    stockName,
+                    shares,
+                    currentPrice: priceData.price,
+                    marketData: priceData
+                };
+            });
+            
+            try {
+                const results = await Promise.all(pricePromises);
+                results.forEach(({ stockName, shares, currentPrice, marketData }) => {
+                    portfolio[stockName] = { 
+                        shares, 
+                        currentPrice,
+                        marketData,
+                        isRealTime: !marketData.fallback
+                    };
+                });
+                
+                console.log('📊 실시간 가격 조회 완료:', portfolio);
+            } catch (error) {
+                console.error('❌ 실시간 가격 조회 중 오류:', error);
+                // 오류 시 백업 데이터 사용
+                stockList.forEach(({ stockName, shares }) => {
+                    portfolio[stockName] = { 
+                        shares, 
+                        currentPrice: getEstimatedPrice(stockName),
+                        isRealTime: false
+                    };
+                });
+            }
+            
+            return portfolio;
+        }
+        
+        // 숫자를 한국식 쉼표 표기로 변환
+        function formatKoreanNumber(number) {
+            return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+        
+        // 실제 주식 가격 조회 (Yahoo Finance API)
+        async function getRealTimePrice(stockName) {
+            try {
+                console.log(`📊 실시간 가격 조회: ${stockName}`);
+                
+                const response = await fetch(`/api/yahoo-finance/${encodeURIComponent(stockName)}`);
+                const data = await response.json();
+                
+                if (data.success && data.price > 0) {
+                    console.log(`✅ ${stockName} 실시간 가격: ${data.price}원`);
+                    return {
+                        price: data.price,
+                        change: data.change,
+                        changePercent: data.changePercent,
+                        volume: data.volume,
+                        marketState: data.marketState,
+                        lastUpdate: data.lastUpdateTime
+                    };
+                } else {
+                    console.warn(`⚠️ ${stockName} 실시간 데이터 조회 실패, 기본값 사용`);
+                    return { price: getEstimatedPrice(stockName), fallback: true };
+                }
+            } catch (error) {
+                console.error(`❌ ${stockName} 가격 조회 오류:`, error);
+                return { price: getEstimatedPrice(stockName), fallback: true };
+            }
+        }
+        
+        // 예상 주가 (백업용)
+        function getEstimatedPrice(stockName) {
+            const prices = {
+                '삼성전자': 71900,
+                '카카오': 54200,
+                '네이버': 195000,
+                'SK하이닉스': 128500,
+                'LG화학': 378000,
+                'NAVER': 195000,
+                'Kakao': 54200
+            };
+            return prices[stockName] || 50000;
+        }
+        
+        // 분석 결과 표시 (한국식 쉼표 표기 적용)
+        function displayAnalysisResult(portfolio, totalAmount) {
+            const stockGrid = document.getElementById('stock-grid');
+            if (!stockGrid) return;
+            
+            let html = '<h3>📊 포트폴리오 분석 결과</h3>';
+            let portfolioValue = 0;
+            
+            Object.entries(portfolio).forEach(([name, data]) => {
+                const value = data.shares * data.currentPrice;
+                portfolioValue += value;
+                
+                html += `
+                    <div class="stock-card">
+                        <h4>${name}</h4>
+                        <p>보유: ${formatKoreanNumber(data.shares)}주</p>
+                        <p>현재가: ${formatKoreanNumber(data.currentPrice)}원</p>
+                        <p>평가금액: ${formatKoreanNumber(value)}원</p>
+                        <p>비중: ${((value / totalAmount) * 100).toFixed(1)}%</p>
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div class="analysis-summary">
+                    <h4>💡 분석 요약</h4>
+                    <p>총 투자금액: ${formatKoreanNumber(totalAmount)}원</p>
+                    <p>현재 평가금액: ${formatKoreanNumber(portfolioValue)}원</p>
+                    <p>손익: ${formatKoreanNumber(portfolioValue - totalAmount)}원</p>
+                    <p>수익률: ${(((portfolioValue - totalAmount) / totalAmount) * 100).toFixed(2)}%</p>
+                </div>
+                
+                <div class="ai-advice">
+                    <h4>🤖 AI 투자 조언</h4>
+                    <p>현재 포트폴리오는 기술주 중심으로 구성되어 있습니다.</p>
+                    <p>적절한 분산투자가 이루어져 있으나, 섹터 집중도가 높습니다.</p>
+                    <p>정기적인 리밸런싱을 통해 위험을 관리하시기 바랍니다.</p>
+                    <p style="color: #e74c3c;">⚠️ 투자에는 원금 손실 위험이 있습니다.</p>
+                </div>
+            `;
+            
+            stockGrid.innerHTML = html;
+            stockGrid.style.display = 'block';
+        }
+        
+        // 빠른 알림 (타입별 색상 지원)
+        function showQuickNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            
+            // 타입별 색상 설정
+            const colors = {
+                success: '#03C75A',
+                error: '#dc3545',
+                warning: '#ffc107',
+                info: '#17a2b8'
+            };
+            
+            const backgroundColor = colors[type] || colors.success;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${backgroundColor};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 10000;
+                font-weight: 600;
+                max-width: 300px;
+                word-wrap: break-word;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+            `;
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // 애니메이션 효과
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 10);
+            
+            // 자동 제거
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+        
+        // 페이지 로드 시 성능 모니터링 시작 (기본값 제거)
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('✅ 페이지 로딩 완료 - 기본값 없이 시작');
+            
+            // 성능 메트릭 업데이트 시작
+            setTimeout(() => {
+                updatePerformanceMetrics();
+                setInterval(updatePerformanceMetrics, 5000); // 5초마다 업데이트
+            }, 1000);
+            
+            // 개발 환경에서 캐시 방지 확인
+            if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+                console.log('🔄 개발 환경: 캐시 방지 모드 활성화');
+                
+                // 페이지 타이틀에 로드 시간 표시 (개발용)
+                const loadTime = new Date().toLocaleTimeString();
+                document.title = `${document.title} - ${loadTime}`;
+            }
+        });
+    </script>
+    
+    <!-- PWA 설치 및 서비스 워커 등록 -->
+    <script>
+        // PWA 설치 기능
+        let deferredPrompt;
+        let installButton;
+
+        // PWA 설치 버튼 생성
+        function createInstallButton() {
+            if (installButton) return;
+            
+            installButton = document.createElement('button');
+            installButton.className = 'btn npay-button pwa-install-btn';
+            installButton.innerHTML = '<span class="npay-logo">📱</span>앱으로 설치';
+            installButton.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                z-index: 1000;
+                box-shadow: 0 4px 12px rgba(3, 199, 90, 0.3);
+                border-radius: 25px;
+                font-size: 14px;
+                padding: 12px 20px;
+            `;
+            
+            installButton.addEventListener('click', installPWA);
+            document.body.appendChild(installButton);
+        }
+
+        // PWA 설치 실행
+        async function installPWA() {
+            if (!deferredPrompt) return;
+            
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('사용자가 PWA 설치를 수락했습니다.');
+                showNotification('앱 설치가 완료되었습니다! 홈 화면에서 확인해주세요.', 'success');
+            } else {
+                console.log('사용자가 PWA 설치를 거부했습니다.');
+            }
+            
+            deferredPrompt = null;
+            if (installButton) {
+                installButton.remove();
+                installButton = null;
+            }
+        }
+
+        // 설치 가능 이벤트 리스너
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            createInstallButton();
+        });
+
+        // 앱 설치 완료 이벤트
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA가 성공적으로 설치되었습니다.');
+            showNotification('마이데이터 투자 앱이 설치되었습니다!', 'success');
+            
+            if (installButton) {
+                installButton.remove();
+                installButton = null;
+            }
+        });
+
+        // 서비스 워커 등록 (개발 환경에서는 비활성화)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                // 개발 환경에서는 서비스 워커 캐시 방지
+                if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+                    console.log('🔄 개발 환경: 서비스 워커 비활성화 (캐시 방지)');
+                    
+                    // 기존 서비스 워커 제거
+                    try {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        registrations.forEach(registration => {
+                            registration.unregister();
+                            console.log('기존 서비스 워커 제거됨');
+                        });
+                    } catch (error) {
+                        console.log('서비스 워커 제거 실패:', error);
+                    }
+                    return;
+                }
+                
+                // 프로덕션 환경에서만 서비스 워커 등록
+                try {
+                    const registration = await navigator.serviceWorker.register('sw.js');
+                    console.log('서비스 워커 등록 성공:', registration.scope);
+                    
+                    // 서비스 워커 업데이트 확인
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                showUpdateNotification();
+                            }
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.log('서비스 워커 등록 실패:', error);
+                }
+            });
+        }
+
+        // 업데이트 알림 표시
+        function showUpdateNotification() {
+            const updateBanner = document.createElement('div');
+            updateBanner.className = 'update-banner';
+            updateBanner.innerHTML = `
+                <div style="background: var(--npay-green); color: white; padding: 12px 20px; text-align: center; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;">
+                    <span>새 업데이트가 있습니다!</span>
+                    <button onclick="refreshApp()" style="background: white; color: var(--npay-green); border: none; padding: 4px 12px; margin-left: 12px; border-radius: 4px; cursor: pointer;">
+                        새로고침
+                    </button>
+                    <button onclick="this.parentElement.remove()" style="background: transparent; color: white; border: 1px solid white; padding: 4px 12px; margin-left: 8px; border-radius: 4px; cursor: pointer;">
+                        나중에
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(updateBanner);
+        }
+
+        // 앱 새로고침
+        function refreshApp() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+                });
+                window.location.reload();
+            }
+        }
+
+        // 알림 표시 함수
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? 'var(--npay-green)' : 'var(--info)'};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 10000;
+                max-width: 300px;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // 애니메이션 CSS 추가
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            .pwa-install-btn {
+                transition: all 0.3s ease;
+            }
+            .pwa-install-btn:hover {
+                transform: scale(1.05);
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 온라인/오프라인 상태 모니터링
+        window.addEventListener('online', () => {
+            showNotification('인터넷 연결이 복구되었습니다.', 'success');
+        });
+
+        window.addEventListener('offline', () => {
+            showNotification('오프라인 모드입니다. 일부 기능이 제한될 수 있습니다.', 'warning');
+        });
+
+        // 앱 버전 체크
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+                const channel = new MessageChannel();
+                channel.port1.onmessage = event => {
+                    console.log('앱 버전:', event.data.version);
+                };
+                registration.active?.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - 마이데이터 투자 시스템</title>
+    
+    <!-- PWA 메타 태그 -->
+    <meta name="description" content="마이데이터 투자 제안 시스템 로그인">
+    <meta name="theme-color" content="#03C75A">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- 스타일시트 -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- OAuth 라이브러리 -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://static.nid.naver.com/js/naveridlogin_js_sdk_2.0.2.js"></script>
+    
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--npay-light-green), var(--gray-100));
+            padding: 20px;
+        }
+        
+        .auth-card {
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        
+        .auth-logo {
+            margin-bottom: 30px;
+        }
+        
+        .auth-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+        
+        .auth-subtitle {
+            color: var(--gray-600);
+            margin-bottom: 30px;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            background: var(--gray-100);
+            padding: 4px;
+        }
+        
+        .auth-tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .auth-tab.active {
+            background: var(--white);
+            color: var(--npay-green);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .auth-form {
+            display: block;
+        }
+        
+        .auth-form.hidden {
+            display: none;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 8px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--npay-green);
+            box-shadow: 0 0 0 3px var(--npay-light-green);
+        }
+        
+        .form-group.error input {
+            border-color: var(--error);
+        }
+        
+        .error-message {
+            color: var(--error);
+            font-size: 0.9rem;
+            margin-top: 8px;
+            display: none;
+        }
+        
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .forgot-password {
+            color: var(--npay-green);
+            text-decoration: none;
+        }
+        
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--npay-green);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .submit-btn:hover {
+            background: var(--npay-dark-green);
+            transform: translateY(-1px);
+        }
+        
+        .submit-btn:disabled {
+            background: var(--gray-400);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid var(--white);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 25px 0;
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--gray-200);
+        }
+        
+        .divider span {
+            padding: 0 15px;
+        }
+        
+        .social-login {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .social-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            background: var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: var(--gray-800);
+            font-weight: 600;
+        }
+        
+        .social-btn:hover {
+            border-color: var(--npay-green);
+            background: var(--npay-light-green);
+        }
+        
+        .social-btn img {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+        
+        .google-btn {
+            border-color: #4285f4;
+        }
+        
+        .google-btn:hover {
+            background: #4285f4;
+            color: var(--white);
+        }
+        
+        .naver-btn {
+            border-color: #03C75A;
+        }
+        
+        .naver-btn:hover {
+            background: #03C75A;
+            color: var(--white);
+        }
+        
+        .terms-link {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: var(--gray-600);
+        }
+        
+        .terms-link a {
+            color: var(--npay-green);
+            text-decoration: none;
+        }
+        
+        .terms-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .register-additional {
+            display: none;
+        }
+        
+        .register-additional.show {
+            display: block;
+        }
+        
+        @media (max-width: 480px) {
+            .auth-card {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            .auth-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <!-- 로고 -->
+            <div class="auth-logo">
+                <div class="logo-placeholder" style="background: var(--npay-green); color: var(--white); padding: 12px 24px; border-radius: 20px; display: inline-block;">
+                    <span style="font-size: 1.2rem; font-weight: 700;">Npay 마이데이터</span>
+                </div>
+            </div>
+            
+            <!-- 제목 -->
+            <h1 class="auth-title">투자 제안 시스템</h1>
+            <p class="auth-subtitle">안전하고 스마트한 투자 관리</p>
+            
+            <!-- 탭 -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchTab('login')">로그인</button>
+                <button class="auth-tab" onclick="switchTab('register')">회원가입</button>
+            </div>
+            
+            <!-- 로그인 폼 -->
+            <form class="auth-form" id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-email">이메일</label>
+                    <input type="email" id="login-email" name="email" required>
+                    <div class="error-message" id="login-email-error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="login-password">비밀번호</label>
+                    <input type="password" id="login-password" name="password" required>
+                    <div class="error-message" id="login-password-error"></div>
+                </div>
+                
+                <div class="form-options">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="remember-me" name="rememberMe">
+                        <label for="remember-me">로그인 상태 유지</label>
+                    </div>
+                    <a href="#" class="forgot-password" onclick="showForgotPassword()">비밀번호 찾기</a>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="login-btn">
+                    로그인
+                </button>
+            </form>
+            
+            <!-- 회원가입 폼 -->
+            <form class="auth-form hidden" id="register-form" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label for="register-email">이메일</label>
+                    <input type="email" id="register-email" name="email" required>
+                    <div class="error-message" id="register-email-error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-name">이름</label>
+                    <input type="text" id="register-name" name="name" required>
+                    <div class="error-message" id="register-name-error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-password">비밀번호</label>
+                    <input type="password" id="register-password" name="password" required>
+                    <div class="error-message" id="register-password-error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-confirm-password">비밀번호 확인</label>
+                    <input type="password" id="register-confirm-password" name="confirmPassword" required>
+                    <div class="error-message" id="register-confirm-password-error"></div>
+                </div>
+                
+                <div class="register-additional">
+                    <div class="form-group">
+                        <label for="register-phone">전화번호 (선택)</label>
+                        <input type="tel" id="register-phone" name="phone">
+                    </div>
+                </div>
+                
+                <div class="form-options">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="agree-terms" name="agreeToTerms" required>
+                        <label for="agree-terms">이용약관 및 개인정보처리방침 동의</label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="register-btn">
+                    회원가입
+                </button>
+            </form>
+            
+            <!-- 소셜 로그인 -->
+            <div class="divider">
+                <span>또는</span>
+            </div>
+            
+            <div class="social-login">
+                <button class="social-btn google-btn" onclick="loginWithGoogle()">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGcgY2xpcC1wYXRoPSJ1cmwoI2NsaXAwXzFfMikiPgo8cGF0aCBkPSJNMTkuOTk5OSAxMC4yMzE0QzE5Ljk5OTkgOS41MzEyIDE5LjkzNjQgOC44Mzk2IDE5LjgxODIgOC4xNTkxSDE4LjE4VjEyLjc4NEgxNS4xMDVWOC4xNTkxSDkuMjU5MjFDOS4yODc0OSA4LjgxMDYgOS4zMjQwOCA5LjQ2MTkgOS4zNjk0IDEwLjExMTdDOS40MTc5MyAxMC44MjU1IDkuNDgxOTQgMTEuNTM4NyA5LjU2MDYgMTIuMjUxSDYuNzkwOThDNi43NTgzNCAxMS42MjA0IDYuNzQzODEgMTAuOTg4NyA2Ljc0NzQ2IDEwLjM1NjdDNi43NDc0NiA4LjE3MjkgNy40NDUxMSA2LjAzODIgOC43MDg0OCA0LjM1ODQ3QzEwLjAzNjYgMi42NzYgMTEuNjU0NiAxLjQzMTk3IDEyLjQ5MTUgMS4wNDAzMUMxMy40MjE4IDAuNjA0Nzc5IDE0LjM3OTMgMC4yMTEwNDUgMTUuMzUzMyAwLjEwNzg1NEMxNi4zNjMzIC0wLjAwMDk3NzUxNiAxNy4zODMzIDAuMDU4MjY0NSAxOC4zNzE4IDAuMzI0Nzc5QzE5LjM2NTUgMC41OTM4NDMgMjAuMzA3IDEuMDU1MjggMjEuMTQ3NCAxLjY4MDY4QzIxLjk3OTcgMi4zMDA4NSAyMi42OTIgMy4wNjg4NSAyMy4yMzYgMy45NTQ1MSIgZmlsbD0iIzQyODVGNCIvPgo8L2c+CjxkZWZzPgo8Y2xpcFBhdGggaWQ9ImNsaXAwXzFfMiI+CjxyZWN0IHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgZmlsbD0id2hpdGUiLz4KPC9jbGlwUGF0aD4KPC9kZWZzPgo8L3N2Zz4K" alt="Google">
+                    Google로 계속하기
+                </button>
+                
+                <button class="social-btn naver-btn" onclick="loginWithNaver()">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiBmaWxsPSIjMDNDNzVBIi8+Cjx0ZXh0IHg9IjEwIiB5PSIxNCIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9ImJvbGQiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk48L3RleHQ+Cjwvc3ZnPgo=" alt="Naver">
+                    네이버로 계속하기
+                </button>
+            </div>
+            
+            <!-- 약관 링크 -->
+            <div class="terms-link">
+                <a href="#" onclick="showTerms()">이용약관</a> · 
+                <a href="#" onclick="showPrivacy()">개인정보처리방침</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 스크립트 -->
+    <script src="auth.js"></script>
+    <script>
+        let auth;
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', async () => {
+            auth = initializeAuth();
+            
+            // 이미 로그인된 경우 메인 페이지로 리다이렉트
+            if (auth.isAuthenticated()) {
+                window.location.href = 'market-data-integration.html';
+                return;
+            }
+            
+            // URL 파라미터 확인 (소셜 로그인 콜백 등)
+            checkUrlParams();
+        });
+
+        // 탭 전환
+        function switchTab(tab) {
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const tabs = document.querySelectorAll('.auth-tab');
+            
+            tabs.forEach(t => t.classList.remove('active'));
+            
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                tabs[0].classList.add('active');
+            } else {
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+                tabs[1].classList.add('active');
+            }
+            
+            clearErrors();
+        }
+
+        // 로그인 처리
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const email = formData.get('email');
+            const password = formData.get('password');
+            const rememberMe = formData.get('rememberMe') === 'on';
+            
+            const submitBtn = document.getElementById('login-btn');
+            
+            try {
+                setLoading(submitBtn, true);
+                clearErrors();
+                
+                const result = await auth.login(email, password, rememberMe);
+                
+                if (result.success) {
+                    showSuccess('로그인에 성공했습니다!');
+                    
+                    // 1초 후 메인 페이지로 이동
+                    setTimeout(() => {
+                        window.location.href = 'market-data-integration.html';
+                    }, 1000);
+                } else {
+                    showError(result.message);
+                }
+                
+            } catch (error) {
+                showError('로그인 중 오류가 발생했습니다.');
+                console.error('로그인 오류:', error);
+            } finally {
+                setLoading(submitBtn, false);
+            }
+        }
+
+        // 회원가입 처리
+        async function handleRegister(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const userData = {
+                email: formData.get('email'),
+                name: formData.get('name'),
+                password: formData.get('password'),
+                confirmPassword: formData.get('confirmPassword'),
+                phone: formData.get('phone'),
+                agreeToTerms: formData.get('agreeToTerms') === 'on'
+            };
+            
+            const submitBtn = document.getElementById('register-btn');
+            
+            try {
+                setLoading(submitBtn, true);
+                clearErrors();
+                
+                const result = await auth.register(userData);
+                
+                if (result.success) {
+                    showSuccess('회원가입이 완료되었습니다! 로그인해주세요.');
+                    
+                    // 로그인 탭으로 전환
+                    setTimeout(() => {
+                        switchTab('login');
+                        document.getElementById('login-email').value = userData.email;
+                    }, 1500);
+                } else {
+                    showError(result.message);
+                }
+                
+            } catch (error) {
+                showError('회원가입 중 오류가 발생했습니다.');
+                console.error('회원가입 오류:', error);
+            } finally {
+                setLoading(submitBtn, false);
+            }
+        }
+
+        // Google 로그인
+        async function loginWithGoogle() {
+            try {
+                const result = await auth.loginWithGoogle();
+                
+                if (result.success) {
+                    showSuccess('Google 로그인에 성공했습니다!');
+                    setTimeout(() => {
+                        window.location.href = 'market-data-integration.html';
+                    }, 1000);
+                } else {
+                    showError(result.message);
+                }
+                
+            } catch (error) {
+                showError('Google 로그인 중 오류가 발생했습니다.');
+                console.error('Google 로그인 오류:', error);
+            }
+        }
+
+        // 네이버 로그인
+        async function loginWithNaver() {
+            try {
+                const result = await auth.loginWithNaver();
+                
+                if (result.success) {
+                    showSuccess('네이버 로그인에 성공했습니다!');
+                    setTimeout(() => {
+                        window.location.href = 'market-data-integration.html';
+                    }, 1000);
+                } else {
+                    showError(result.message);
+                }
+                
+            } catch (error) {
+                showError('네이버 로그인 중 오류가 발생했습니다.');
+                console.error('네이버 로그인 오류:', error);
+            }
+        }
+
+        // 비밀번호 찾기
+        function showForgotPassword() {
+            alert('비밀번호 찾기 기능은 개발 중입니다.\n\n실제 서비스에서는 이메일로 재설정 링크를 전송합니다.');
+        }
+
+        // 약관 보기
+        function showTerms() {
+            window.open('terms.html', '_blank');
+        }
+
+        function showPrivacy() {
+            window.open('privacy.html', '_blank');
+        }
+
+        // URL 파라미터 확인
+        function checkUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            const message = urlParams.get('message');
+            
+            if (error) {
+                showError(decodeURIComponent(message || '인증 중 오류가 발생했습니다.'));
+            }
+        }
+
+        // 로딩 상태 설정
+        function setLoading(button, isLoading) {
+            if (isLoading) {
+                button.disabled = true;
+                button.innerHTML = '<span class="loading-spinner"></span>처리 중...';
+                button.classList.add('loading-btn');
+            } else {
+                button.disabled = false;
+                button.innerHTML = button.id === 'login-btn' ? '로그인' : '회원가입';
+                button.classList.remove('loading-btn');
+            }
+        }
+
+        // 에러 표시
+        function showError(message) {
+            showNotification(message, 'error');
+        }
+
+        // 성공 메시지 표시
+        function showSuccess(message) {
+            showNotification(message, 'success');
+        }
+
+        // 알림 표시
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? 'var(--npay-green)' : 'var(--error)'};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 10000;
+                max-width: 300px;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // 에러 메시지 지우기
+        function clearErrors() {
+            document.querySelectorAll('.error-message').forEach(error => {
+                error.style.display = 'none';
+                error.textContent = '';
+            });
+            
+            document.querySelectorAll('.form-group').forEach(group => {
+                group.classList.remove('error');
+            });
+        }
+
+        // 개별 필드 에러 표시
+        function showFieldError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            const errorElement = document.getElementById(fieldId + '-error');
+            
+            if (field && errorElement) {
+                field.closest('.form-group').classList.add('error');
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+            }
+        }
+
+        // 인증 이벤트 리스너
+        window.addEventListener('auth:loginSuccess', (event) => {
+            console.log('로그인 성공:', event.detail.user);
+        });
+
+        window.addEventListener('auth:logout', () => {
+            console.log('로그아웃됨');
+            // 필요시 로그인 페이지로 리다이렉트
+        });
+
+        // 애니메이션 CSS 추가
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

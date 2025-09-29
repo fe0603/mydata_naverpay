@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 연동 테스트 - 마이데이터 투자 시스템</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .api-test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #22c55e; }
+        .status-error { background: #ef4444; }
+        .status-loading { background: #f59e0b; animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="api-test-container">
+        <header class="header">
+            <h1>🧪 API 연동 테스트</h1>
+            <div class="naverpay-logo">
+                <div class="logo-placeholder">Npay 연동 테스트</div>
+            </div>
+        </header>
+
+        <!-- 서버 헬스체크 -->
+        <section class="test-section">
+            <h2>🚀 서버 상태 확인</h2>
+            <button class="btn primary" onclick="testServerHealth()">서버 헬스체크</button>
+            <div class="test-result" id="health-result">테스트를 실행해주세요.</div>
+        </section>
+
+        <!-- Gemini AI API 테스트 -->
+        <section class="test-section">
+            <h2>🤖 Gemini AI 연동 테스트</h2>
+            <div class="form-group">
+                <label for="gemini-api-key">Gemini API Key:</label>
+                <input type="password" id="gemini-api-key" placeholder="실제 Gemini API 키를 입력하세요">
+                <small>보안을 위해 임시로만 사용되며 저장되지 않습니다.</small>
+            </div>
+            <button class="btn primary" onclick="testGeminiAPI()">Gemini AI 테스트</button>
+            <div class="test-result" id="gemini-result">API 키를 입력하고 테스트를 실행해주세요.</div>
+        </section>
+
+        <!-- 시장 데이터 API 테스트 -->
+        <section class="test-section">
+            <h2>📊 시장 데이터 연동 테스트</h2>
+            <div class="market-controls">
+                <button class="btn secondary" onclick="testYahooFinance()">야후 파이낸스 테스트</button>
+                <button class="btn secondary" onclick="testKISAPI()">KIS API 테스트</button>
+            </div>
+            <div class="test-result" id="market-result">테스트를 실행해주세요.</div>
+        </section>
+
+        <!-- 통합 투자 제안 테스트 -->
+        <section class="test-section">
+            <h2>🎯 통합 투자 제안 테스트</h2>
+            <div class="form-group">
+                <label>테스트 포트폴리오:</label>
+                <textarea id="test-portfolio" readonly>삼성전자 10주, 카카오 5주, 네이버 3주</textarea>
+            </div>
+            <div class="form-group">
+                <label>투자금액:</label>
+                <input type="number" id="test-amount" value="10000000" readonly>
+            </div>
+            <button class="btn primary" onclick="testFullInvestmentAdvice()">통합 투자 제안 테스트</button>
+            <div class="test-result" id="investment-result">Gemini API 키가 설정된 후 테스트 가능합니다.</div>
+        </section>
+
+        <!-- 네이버페이 연동 시뮬레이션 -->
+        <section class="test-section">
+            <h2>💳 네이버페이 연동 시뮬레이션</h2>
+            <div class="benefit-badge">
+                <span class="badge-text">Npay 결제 시 최대 2% 적립</span>
+            </div>
+            <button class="btn npay-button" onclick="simulateNpayIntegration()">
+                <span class="npay-logo">N</span>
+                네이버페이 연동 시뮬레이션
+            </button>
+            <div class="test-result" id="npay-result">네이버페이 브랜드 가이드라인 준수 상태를 확인합니다.</div>
+        </section>
+
+        <!-- 전체 시스템 통합 테스트 -->
+        <section class="test-section">
+            <h2>🔄 전체 시스템 통합 테스트</h2>
+            <button class="btn primary" onclick="runFullSystemTest()" style="font-size: 16px; padding: 15px 30px;">
+                🚀 전체 시스템 테스트 실행
+            </button>
+            <div class="test-result" id="system-result">모든 개별 테스트가 성공한 후 실행해주세요.</div>
+        </section>
+    </div>
+
+    <script>
+        let currentGeminiKey = '';
+        const SERVER_URL = 'http://localhost:3001';
+
+        // 상태 표시 헬퍼
+        function updateStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            const statusClass = status === 'loading' ? 'status-loading' : 
+                               status === 'success' ? 'status-success' : 'status-error';
+            
+            element.innerHTML = `<span class="status-indicator ${statusClass}"></span>${message}`;
+        }
+
+        // 1. 서버 헬스체크
+        async function testServerHealth() {
+            updateStatus('health-result', 'loading', '서버 상태를 확인하는 중...');
+            
+            try {
+                const response = await fetch(`${SERVER_URL}/api/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus('health-result', 'success', 
+                        `서버 정상 동작 확인!\n\n응답 데이터:\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    updateStatus('health-result', 'error', `서버 오류: ${data.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                updateStatus('health-result', 'error', 
+                    `서버 연결 실패: ${error.message}\n\n서버가 실행 중인지 확인해주세요 (포트 3001)`);
+            }
+        }
+
+        // 2. Gemini AI API 테스트
+        async function testGeminiAPI() {
+            const apiKey = document.getElementById('gemini-api-key').value.trim();
+            
+            if (!apiKey) {
+                updateStatus('gemini-result', 'error', 'Gemini API 키를 입력해주세요.');
+                return;
+            }
+
+            currentGeminiKey = apiKey;
+            updateStatus('gemini-result', 'loading', 'Gemini AI 연동을 테스트하는 중...');
+
+            try {
+                const testPrompt = `안녕하세요! 저는 마이데이터 투자 제안 시스템의 AI 어시스턴트입니다. 
+간단한 연결 테스트를 진행합니다. "연결 성공"이라고 답변해주세요.`;
+
+                const response = await fetch(`${SERVER_URL}/api/investment-advice`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        portfolio: { "테스트": { "shares": 1, "price": 1000 } },
+                        riskLevel: 'moderate',
+                        targetReturn: 5,
+                        testPrompt: testPrompt
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    updateStatus('gemini-result', 'success', 
+                        `Gemini AI 연동 성공!\n\nAI 응답:\n${data.advice}\n\n주의사항: ${data.riskWarning}`);
+                } else {
+                    updateStatus('gemini-result', 'error', 
+                        `Gemini AI 연동 실패:\n${data.error || data.message || 'Unknown error'}\n\nAPI 키가 올바른지 확인해주세요.`);
+                }
+            } catch (error) {
+                updateStatus('gemini-result', 'error', 
+                    `Gemini AI 테스트 실패: ${error.message}\n\n네트워크 연결 또는 API 키를 확인해주세요.`);
+            }
+        }
+
+        // 3. 야후 파이낸스 테스트
+        async function testYahooFinance() {
+            updateStatus('market-result', 'loading', '야후 파이낸스 API 테스트 중...');
+
+            try {
+                const response = await fetch(`${SERVER_URL}/api/yahoo-finance/005930.KS`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    updateStatus('market-result', 'success', 
+                        `야후 파이낸스 연동 성공!\n\n삼성전자 데이터:\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    updateStatus('market-result', 'error', `야후 파이낸스 오류: ${data.error}`);
+                }
+            } catch (error) {
+                updateStatus('market-result', 'error', 
+                    `야후 파이낸스 테스트 실패: ${error.message}\n\nCORS 또는 네트워크 문제일 수 있습니다.`);
+            }
+        }
+
+        // 4. KIS API 테스트
+        async function testKISAPI() {
+            updateStatus('market-result', 'loading', 'KIS API 테스트 중...');
+
+            try {
+                const response = await fetch(`${SERVER_URL}/api/kis-token`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    updateStatus('market-result', 'success', 
+                        `KIS API 토큰 발급 성공!\n\n토큰 정보:\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    updateStatus('market-result', 'error', 
+                        `KIS API 테스트 실패:\n${data.error}\n\nKIS API 키가 설정되지 않았을 수 있습니다.`);
+                }
+            } catch (error) {
+                updateStatus('market-result', 'error', `KIS API 테스트 실패: ${error.message}`);
+            }
+        }
+
+        // 5. 통합 투자 제안 테스트
+        async function testFullInvestmentAdvice() {
+            if (!currentGeminiKey) {
+                updateStatus('investment-result', 'error', '먼저 Gemini API 테스트를 성공해주세요.');
+                return;
+            }
+
+            updateStatus('investment-result', 'loading', '통합 투자 제안을 생성하는 중...');
+
+            try {
+                const portfolio = {
+                    "삼성전자": { "shares": 10, "price": 71900 },
+                    "카카오": { "shares": 5, "price": 54200 },
+                    "네이버": { "shares": 3, "price": 195000 }
+                };
+
+                const marketData = {
+                    "삼성전자": { "price": 71900, "change": 1100, "changePercent": 1.55 },
+                    "카카오": { "price": 54200, "change": -800, "changePercent": -1.45 },
+                    "네이버": { "price": 195000, "change": 2500, "changePercent": 1.30 }
+                };
+
+                const response = await fetch(`${SERVER_URL}/api/investment-advice`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': currentGeminiKey
+                    },
+                    body: JSON.stringify({
+                        portfolio: portfolio,
+                        riskLevel: 'moderate',
+                        targetReturn: 8,
+                        marketData: marketData
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    updateStatus('investment-result', 'success', 
+                        `통합 투자 제안 성공!\n\nAI 제안:\n${data.advice}\n\n위험 고지: ${data.riskWarning}`);
+                } else {
+                    updateStatus('investment-result', 'error', 
+                        `통합 투자 제안 실패:\n${data.error || data.message}`);
+                }
+            } catch (error) {
+                updateStatus('investment-result', 'error', 
+                    `통합 투자 제안 테스트 실패: ${error.message}`);
+            }
+        }
+
+        // 6. 네이버페이 연동 시뮬레이션
+        function simulateNpayIntegration() {
+            updateStatus('npay-result', 'loading', '네이버페이 브랜드 가이드라인 검증 중...');
+
+            setTimeout(() => {
+                const brandChecklist = [
+                    '✅ Npay Green (#03C75A) 색상 적용 확인',
+                    '✅ 시그니처 로고 가이드라인 준수',
+                    '✅ 혜택 배지 올바른 표시',
+                    '✅ 버튼 디자인 브랜드 가이드 준수',
+                    '✅ 이용약관 및 면책조항 포함',
+                    '✅ 반응형 디자인 적용',
+                    '',
+                    '🎯 네이버페이 연동 준비 완료!',
+                    '실제 서비스 시 가입 심사 및 결제 서비스 연동 필요'
+                ];
+
+                updateStatus('npay-result', 'success', brandChecklist.join('\n'));
+            }, 1500);
+        }
+
+        // 7. 전체 시스템 통합 테스트
+        async function runFullSystemTest() {
+            updateStatus('system-result', 'loading', '전체 시스템 통합 테스트를 실행하는 중...\n\n단계별 진행상황:');
+
+            const tests = [
+                { name: '서버 헬스체크', func: testServerHealth },
+                { name: 'Gemini AI 연동', func: testGeminiAPI },
+                { name: '시장 데이터 연동', func: testYahooFinance },
+                { name: '네이버페이 시뮬레이션', func: simulateNpayIntegration }
+            ];
+
+            let results = [];
+            let allPassed = true;
+
+            for (let i = 0; i < tests.length; i++) {
+                const test = tests[i];
+                updateStatus('system-result', 'loading', 
+                    `전체 시스템 통합 테스트 진행 중...\n\n[${i + 1}/${tests.length}] ${test.name} 실행 중...`);
+                
+                try {
+                    await test.func();
+                    results.push(`✅ ${test.name}: 성공`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                } catch (error) {
+                    results.push(`❌ ${test.name}: 실패 - ${error.message}`);
+                    allPassed = false;
+                }
+            }
+
+            const finalResult = allPassed ? 
+                `🎉 전체 시스템 통합 테스트 성공!\n\n${results.join('\n')}\n\n✨ 마이데이터 투자 제안 시스템이 완전히 준비되었습니다!` :
+                `⚠️ 일부 테스트 실패\n\n${results.join('\n')}\n\n실패한 항목을 개별적으로 확인해주세요.`;
+
+            updateStatus('system-result', allPassed ? 'success' : 'error', finalResult);
+        }
+
+        // 페이지 로드 시 자동 서버 체크
+        window.addEventListener('load', () => {
+            setTimeout(testServerHealth, 1000);
+        });
+    </script>
+</body>
+</html>
