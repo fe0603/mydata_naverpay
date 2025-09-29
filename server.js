@@ -98,7 +98,10 @@ app.post('/api/investment-advice', async (req, res) => {
         console.log('🤖 Gemini AI API 요청 받음:', req.body);
         
         // 캐시 키 생성 (요청 내용 기반)
-        const cacheKey = crypto.createHash('md5').update(JSON.stringify(req.body)).digest('hex');
+        const requestString = JSON.stringify(req.body);
+        const hash = crypto.createHash('md5');
+        hash.update(requestString);
+        const cacheKey = hash.digest('hex');
         
         // 캐시 확인
         if (responseCache.has(cacheKey)) {
@@ -218,7 +221,7 @@ app.post('/api/investment-advice', async (req, res) => {
         
         // Gemini API 호출 (최적화된 설정)
         const geminiResponse = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
             requestData,
             {
                 headers: {
@@ -238,7 +241,7 @@ app.post('/api/investment-advice', async (req, res) => {
             timestamp: new Date().toISOString(),
             riskWarning: '투자에는 원금 손실의 위험이 있습니다. 이 제안은 참고용이며, 실제 투자 결정은 신중히 하시기 바랍니다.',
             apiUsage: {
-                model: 'gemini-1.5-flash',
+                model: 'gemini-1.5-pro',
                 promptLength: investmentPrompt ? investmentPrompt.length : 0,
                 responseLength: advice.length
             }
