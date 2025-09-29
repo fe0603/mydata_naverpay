@@ -25,9 +25,10 @@
 
 #### 중요: Node.js 버전 강제 설정
 Vercel에서 Node.js 버전 문제가 발생할 경우, 다음 파일들이 모두 설정되어 있는지 확인:
-- `.nvmrc`: `22` (Node.js 22 버전 명시)
+- `.nvmrc`: `22.9.0` (Node.js 22.9.0 버전 명시)
 - `vercel.json`: `"runtime": "nodejs22.x"` (Vercel 런타임 명시)
-- `package.json`: `"node": ">=22.0.0"` (엔진 요구사항)
+- `package.json`: `"node": "22.x"` (엔진 요구사항)
+- `builds` 설정: `@vercel/node` with `nodejs22.x` 런타임
 
 #### Framework Preset
 - **Framework Preset**: `Other` 선택
@@ -39,7 +40,7 @@ Vercel에서 Node.js 버전 문제가 발생할 경우, 다음 파일들이 모�
 - **Build Command**: 비워둠 (Vercel이 자동 감지)
 - **Output Directory**: `./` (기본값)
 - **Install Command**: `npm install`
-- **Node.js Version**: `22.x` (package.json, .nvmrc, vercel.json에서 명시)
+- **Node.js Version**: `22.x` (package.json, .nvmrc, vercel.json, builds에서 명시)
 
 ### 3단계: 환경변수 설정
 
